@@ -2,14 +2,14 @@
 <html>
 <head>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="container">
 
 <h2>Login</h2>
 
-<input id="email" class="input">
-<input id="password" type="password" class="input">
+<input id="email" class="input" placeholder="Email">
+<input id="password" type="password" class="input" placeholder="Senha">
 
 <button class="btn btn-main" onclick="login()">Entrar</button>
 
@@ -20,15 +20,26 @@ const supabase = window.supabase.createClient(
 )
 
 async function login(){
-const email=document.getElementById("email").value
-const password=document.getElementById("password").value
+const email = document.getElementById("email").value
+const password = document.getElementById("password").value
 
-const {error}=await supabase.auth.signInWithPassword({email,password})
+try{
+const { data, error } = await supabase.auth.signInWithPassword({
+  email,
+  password
+})
 
-if(!error){
-location.href="painel-9xK21.html"
-}else{
-alert("Erro login")
+if(error){
+  alert("Erro: " + error.message)
+  return
+}
+
+alert("Login feito")
+window.location.href = "painel-9xK21.html"
+
+}catch(e){
+alert("Erro inesperado")
+console.error(e)
 }
 }
 </script>
