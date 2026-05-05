@@ -19,3 +19,30 @@ body{background:linear-gradient(135deg,var(--bg),var(--bg2));color:var(--text)}
 .preview{display:flex;gap:10px;flex-wrap:wrap}
 .preview img{width:80px;border-radius:8px}
 .progress{height:5px;background:#00c3ff;width:0%}
+@media (max-width: 768px){
+.container{
+padding:15px;
+}
+
+h1,h2{
+font-size:22px;
+}
+
+.input{
+font-size:16px;
+padding:12px;
+}
+
+.btn{
+width:100%;
+margin-top:10px;
+}
+
+.card{
+padding:15px;
+}
+
+.products{
+grid-template-columns:1fr;
+}
+}
