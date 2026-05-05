@@ -3,69 +3,156 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body class="container">
 
-<!-- LOGIN -->
-<div id="login" class="card">
+<!-- 🔐 LOGIN -->
+<div id="loginBox" class="card">
 <h2>Painel Admin</h2>
 
-<input id="pass" class="input" placeholder="Senha">
+<input id="email" class="input" placeholder="Email">
+<input id="password" type="password" class="input" placeholder="Senha">
 
-<button id="btn" class="btn btn-main">Entrar</button>
-
+<button class="btn btn-main" onclick="login()">Entrar</button>
 </div>
 
-<!-- PAINEL -->
-<div id="panel" style="display:none">
+<!-- 🧑‍💻 DASHBOARD -->
+<div id="dashboard" style="display:none">
 
-<h2>Painel</h2>
+<h2>Dashboard Produtos</h2>
 
 <div class="card">
+
 <input id="name" class="input" placeholder="Nome">
 <input id="price" class="input" placeholder="Preço">
+<input id="whatsapp" class="input" placeholder="WhatsApp">
 <textarea id="desc" class="input" placeholder="Descrição"></textarea>
 
-<button class="btn btn-main" onclick="openPanel()">Abrir Painel</button>
+<input type="file" id="files" multiple class="input" onchange="preview(event)">
+
+<div id="preview" class="preview"></div>
+
+<button class="btn btn-main" onclick="save()">Salvar Produto</button>
+
 </div>
+
+<h3>Produtos</h3>
+<div id="list" class="products"></div>
 
 </div>
 
 <script>
-const PASSWORD = "admin123"
+const supabase = window.supabase.createClient(
+"https://yaoyuizofpiqvqbberww.supabase.co",
+"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
+)
 
-console.log("JS carregou")
+// 🔐 LOGIN REAL SUPABASE
+async function login(){
+const email = document.getElementById("email").value
+const password = document.getElementById("password").value
 
-// botão 100% garantido
-document.getElementById("btn").addEventListener("click", function(){
-
-console.log("clicou")
-
-const value = document.getElementById("pass").value
-
-if(value === PASSWORD){
-
-localStorage.setItem("adm","ok")
-
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
-
-}else{
-alert("Senha errada")
-}
-
+const { data, error } = await supabase.auth.signInWithPassword({
+email,
+password
 })
 
-// auto login
-if(localStorage.getItem("adm") === "ok"){
-document.getElementById("login").style.display="none"
-document.getElementById("panel").style.display="block"
+if(error){
+alert(error.message)
+return
 }
 
-function openPanel(){
-alert("Painel funcionando")
+checkSession()
 }
+
+// 🔓 VERIFICA SESSÃO
+async function checkSession(){
+const { data } = await supabase.auth.getSession()
+
+if(data.session){
+document.getElementById("loginBox").style.display="none"
+document.getElementById("dashboard").style.display="block"
+load()
+}
+}
+
+// 🖼️ PREVIEW IMAGENS
+function preview(e){
+const files = e.target.files
+const div = document.getElementById("preview")
+div.innerHTML=""
+
+for(let f of files){
+const url = URL.createObjectURL(f)
+div.innerHTML += `<img src="${url}">`
+}
+}
+
+// 📤 UPLOAD
+async function upload(files){
+let urls=[]
+
+for(let f of files){
+const name = Date.now()+"_"+f.name
+
+await supabase.storage.from("products").upload(name,f)
+
+const { data } = supabase.storage.from("products").getPublicUrl(name)
+urls.push(data.publicUrl)
+}
+
+return urls
+}
+
+// 💾 SALVAR PRODUTO
+async function save(){
+
+const files = document.getElementById("files").files
+if(files.length===0){
+alert("Selecione imagens")
+return
+}
+
+const imgs = await upload(files)
+
+await supabase.from("products").insert([{
+name:name.value,
+price:parseFloat(price.value),
+whatsapp:whatsapp.value,
+description:desc.value,
+images:imgs
+}])
+
+load()
+}
+
+// 📦 LISTAR PRODUTOS
+async function load(){
+const { data } = await supabase.from("products").select("*")
+
+const div = document.getElementById("list")
+div.innerHTML=""
+
+data.forEach(p=>{
+div.innerHTML+=`
+<div class="card">
+<strong>${p.name}</strong><br>
+R$ ${p.price}<br>
+<button class="btn btn-danger" onclick="del(${p.id})">Excluir</button>
+</div>`
+})
+}
+
+// 🗑️ DELETE
+async function del(id){
+await supabase.from("products").delete().eq("id",id)
+load()
+}
+
+// INIT
+checkSession()
 </script>
 
 </body>
