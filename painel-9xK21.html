@@ -6,7 +6,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-<body style="display:none" class="container">
+<body class="container">
+
+<!-- 🔐 LOGIN -->
+<div id="loginBox" class="card">
+<h2>Login Admin</h2>
+
+<input id="email" class="input" placeholder="Email">
+<input id="password" type="password" class="input" placeholder="Senha">
+
+<button class="btn btn-main" onclick="login()">Entrar</button>
+</div>
+
+<!-- 🧑‍💻 PAINEL -->
+<div id="adminPanel" style="display:none">
 
 <h2>Painel Admin</h2>
 
@@ -19,10 +32,13 @@
 <input type="file" id="files" multiple class="input">
 
 <button class="btn btn-main" onclick="save()">Salvar</button>
+<button class="btn btn-danger" onclick="logout()">Sair</button>
 </div>
 
 <h3>Produtos</h3>
 <div id="list"></div>
+
+</div>
 
 <script>
 const supabase = window.supabase.createClient(
@@ -31,25 +47,45 @@ const supabase = window.supabase.createClient(
 { auth:{ persistSession:true } }
 )
 
-// 🔎 DEBUG AUTH
+// 🔎 DEBUG
 supabase.auth.onAuthStateChange((event, session)=>{
-console.log("AUTH EVENT:", event)
-console.log("SESSION:", session)
+console.log("AUTH:", event, session)
 })
 
-// 🔒 VERIFICA LOGIN
-;(async ()=>{
-const { data } = await supabase.auth.getSession()
+// 🔐 LOGIN
+async function login(){
+const email = document.getElementById("email").value.trim()
+const password = document.getElementById("password").value.trim()
 
-if(!data.session){
-alert("Faça login primeiro")
-window.location.href = "login.html"
+const { error } = await supabase.auth.signInWithPassword({email,password})
+
+if(error){
+alert(error.message)
 return
 }
 
-console.log("LOGADO:", data.session.user.email)
-document.body.style.display="block"
-})()
+check()
+}
+
+// 🔓 LOGOUT
+async function logout(){
+await supabase.auth.signOut()
+location.reload()
+}
+
+// 🔁 VERIFICA SESSÃO
+async function check(){
+const { data } = await supabase.auth.getSession()
+
+if(data.session){
+document.getElementById("loginBox").style.display="none"
+document.getElementById("adminPanel").style.display="block"
+load()
+}else{
+document.getElementById("loginBox").style.display="block"
+document.getElementById("adminPanel").style.display="none"
+}
+}
 
 // 📤 UPLOAD
 async function upload(files){
@@ -57,19 +93,9 @@ let urls=[]
 for(let f of files){
 const name=Date.now()+"_"+f.name
 
-const { error } = await supabase.storage
-.from("products")
-.upload(name,f)
+await supabase.storage.from("products").upload(name,f)
 
-if(error){
-alert("Erro upload")
-return
-}
-
-const { data } = supabase.storage
-.from("products")
-.getPublicUrl(name)
-
+const { data } = supabase.storage.from("products").getPublicUrl(name)
 urls.push(data.publicUrl)
 }
 return urls
@@ -87,18 +113,13 @@ return
 
 const imgs=await upload(files)
 
-const { error } = await supabase.from("products").insert([{
-name:document.getElementById("name").value,
-price:parseFloat(document.getElementById("price").value),
-description:document.getElementById("desc").value,
-whatsapp:document.getElementById("whatsapp").value,
+await supabase.from("products").insert([{
+name:name.value,
+price:parseFloat(price.value),
+description:desc.value,
+whatsapp:whatsapp.value,
 images:imgs
 }])
-
-if(error){
-alert("Erro salvar")
-return
-}
 
 alert("Salvo")
 load()
@@ -126,7 +147,8 @@ await supabase.from("products").delete().eq("id",id)
 load()
 }
 
-load()
+// iniciar
+check()
 </script>
 
 </body>
