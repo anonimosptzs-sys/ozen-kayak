@@ -8,18 +8,7 @@
 
 <body class="container">
 
-<!-- 🔐 LOGIN -->
-<div id="loginBox" class="card">
-<h2>Login Admin</h2>
-
-<input id="email" class="input" placeholder="Email">
-<input id="password" type="password" class="input" placeholder="Senha">
-
-<button class="btn btn-main" onclick="login()">Entrar</button>
-</div>
-
-<!-- 🧑‍💻 PAINEL -->
-<div id="adminPanel" style="display:none">
+<div id="app" style="display:none">
 
 <h2>Painel Admin</h2>
 
@@ -32,7 +21,6 @@
 <input type="file" id="files" multiple class="input">
 
 <button class="btn btn-main" onclick="save()">Salvar</button>
-<button class="btn btn-danger" onclick="logout()">Sair</button>
 </div>
 
 <h3>Produtos</h3>
@@ -41,67 +29,47 @@
 </div>
 
 <script>
+const PASSWORD = "admin123"; // 🔒 troca isso
+
 const supabase = window.supabase.createClient(
 "https://yaoyuizofpiqvqbberww.supabase.co",
-"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc",
-{ auth:{ persistSession:true } }
+"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
 )
 
-// 🔎 DEBUG
-supabase.auth.onAuthStateChange((event, session)=>{
-console.log("AUTH:", event, session)
-})
+// 🔐 senha simples
+function checkAccess(){
+let saved = localStorage.getItem("adm")
 
-// 🔐 LOGIN
-async function login(){
-const email = document.getElementById("email").value.trim()
-const password = document.getElementById("password").value.trim()
-
-const { error } = await supabase.auth.signInWithPassword({email,password})
-
-if(error){
-alert(error.message)
-return
-}
-
-check()
-}
-
-// 🔓 LOGOUT
-async function logout(){
-await supabase.auth.signOut()
-location.reload()
-}
-
-// 🔁 VERIFICA SESSÃO
-async function check(){
-const { data } = await supabase.auth.getSession()
-
-if(data.session){
-document.getElementById("loginBox").style.display="none"
-document.getElementById("adminPanel").style.display="block"
+if(saved === PASSWORD){
+document.getElementById("app").style.display="block"
 load()
 }else{
-document.getElementById("loginBox").style.display="block"
-document.getElementById("adminPanel").style.display="none"
+let input = prompt("Senha do painel:")
+
+if(input === PASSWORD){
+localStorage.setItem("adm", PASSWORD)
+document.getElementById("app").style.display="block"
+load()
+}else{
+alert("Senha incorreta")
+location.reload()
+}
 }
 }
 
-// 📤 UPLOAD
+// 📤 upload
 async function upload(files){
 let urls=[]
 for(let f of files){
 const name=Date.now()+"_"+f.name
-
 await supabase.storage.from("products").upload(name,f)
-
 const { data } = supabase.storage.from("products").getPublicUrl(name)
 urls.push(data.publicUrl)
 }
 return urls
 }
 
-// 💾 SALVAR
+// 💾 salvar
 async function save(){
 
 const files=document.getElementById("files").files
@@ -125,7 +93,7 @@ alert("Salvo")
 load()
 }
 
-// 📦 LISTAR
+// 📦 listar
 async function load(){
 const { data } = await supabase.from("products").select("*")
 const div=document.getElementById("list")
@@ -141,14 +109,14 @@ R$ ${p.price}<br>
 })
 }
 
-// 🗑️ DELETE
+// 🗑️ delete
 async function del(id){
 await supabase.from("products").delete().eq("id",id)
 load()
 }
 
 // iniciar
-check()
+checkAccess()
 </script>
 
 </body>
