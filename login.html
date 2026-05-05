@@ -18,7 +18,12 @@
 <script>
 const supabase = window.supabase.createClient(
 "https://yaoyuizofpiqvqbberww.supabase.co",
-"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
+"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc",
+{
+  auth: {
+    persistSession: true
+  }
+}
 )
 
 document.getElementById("btnLogin").addEventListener("click", async () => {
@@ -26,14 +31,20 @@ document.getElementById("btnLogin").addEventListener("click", async () => {
 const email = document.getElementById("email").value.trim()
 const password = document.getElementById("password").value.trim()
 
-const { data, error } = await supabase.auth.signInWithPassword({email,password})
+const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
 if(error){
-alert(error.message)
+alert("Erro: " + error.message)
 return
 }
 
-window.location.href="painel-9xK21.html"
+// salva sessão
+const { data: session } = await supabase.auth.getSession()
+console.log("SESSION:", session)
+
+alert("Login OK")
+
+window.location.href = "painel-9xK21.html"
 })
 </script>
 
