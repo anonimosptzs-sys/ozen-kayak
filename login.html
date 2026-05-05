@@ -14,7 +14,7 @@
 <input id="email" class="input" placeholder="Email">
 <input id="password" type="password" class="input" placeholder="Senha">
 
-<button class="btn btn-main" onclick="login(event)">Entrar</button>
+<button id="btnLogin" class="btn btn-main">Entrar</button>
 
 <script>
 const supabase = window.supabase.createClient(
@@ -22,15 +22,18 @@ const supabase = window.supabase.createClient(
 "sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
 )
 
-async function login(e){
-e.preventDefault()
+// garante que o JS rodou
+console.log("JS carregado")
+
+document.getElementById("btnLogin").addEventListener("click", async () => {
+
+console.log("Botão clicado")
 
 const email = document.getElementById("email").value.trim()
 const password = document.getElementById("password").value.trim()
 
-console.log("Tentando login:", email)
+console.log("Dados:", email, password)
 
-try{
 const { data, error } = await supabase.auth.signInWithPassword({
   email,
   password
@@ -42,16 +45,11 @@ if(error){
   return
 }
 
-console.log("Login OK:", data)
-
-alert("Login realizado com sucesso")
+console.log("Login OK")
+alert("Entrou")
 window.location.href = "painel-9xK21.html"
 
-}catch(err){
-console.error("Erro inesperado:", err)
-alert("Erro inesperado, veja o console")
-}
-}
+})
 </script>
 
 </body>
