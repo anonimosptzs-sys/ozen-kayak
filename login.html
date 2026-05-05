@@ -19,30 +19,34 @@
 const supabase = window.supabase.createClient(
 "https://yaoyuizofpiqvqbberww.supabase.co",
 "sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc",
-{
-  auth: {
-    persistSession: true
-  }
-}
+{ auth:{ persistSession:true } }
 )
+
+// 🔎 DEBUG AUTH
+supabase.auth.onAuthStateChange((event, session)=>{
+console.log("EVENTO:", event)
+console.log("SESSION:", session)
+})
 
 document.getElementById("btnLogin").addEventListener("click", async () => {
 
 const email = document.getElementById("email").value.trim()
 const password = document.getElementById("password").value.trim()
 
-const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+console.log("Tentando login:", email)
+
+const { data, error } = await supabase.auth.signInWithPassword({
+email,
+password
+})
 
 if(error){
-alert("Erro: " + error.message)
+console.error("Erro:", error)
+alert(error.message)
 return
 }
 
-// salva sessão
-const { data: session } = await supabase.auth.getSession()
-console.log("SESSION:", session)
-
-alert("Login OK")
+console.log("LOGIN OK")
 
 window.location.href = "painel-9xK21.html"
 })
