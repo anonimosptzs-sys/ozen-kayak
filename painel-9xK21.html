@@ -8,50 +8,26 @@
 
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-<h2>Ozen Panel</h2>
+<div class="container">
 
-<div class="menu">
-<button onclick="show('dash')">📊 Dashboard</button>
-<button onclick="show('prod')">📦 Produtos</button>
-</div>
-</div>
-
-<!-- MAIN -->
-<div class="main">
-
-<!-- DASH -->
-<div id="dash">
-<h2>Dashboard</h2>
+<!-- FORM -->
 <div class="card">
-<p>Total produtos: <span id="total"></span></p>
-</div>
-</div>
 
-<!-- PRODUTOS -->
-<div id="prod" style="display:none">
-
-<h2>Produtos</h2>
-
-<div class="card">
+<h2>Painel Produtos</h2>
 
 <input id="name" class="input" placeholder="Nome">
 <input id="price" class="input" placeholder="Preço">
 <textarea id="desc" class="input" placeholder="Descrição"></textarea>
 
-<div id="drop" class="drop">Arraste imagens aqui</div>
-<input type="file" id="files" multiple class="input" style="display:none">
+<input type="file" id="files" multiple class="input">
 
-<div id="preview" class="preview"></div>
-
-<button class="btn btn-main" onclick="save()">Salvar</button>
+<button id="btnSave" class="btn btn-main" onclick="save()">Salvar Produto</button>
 
 </div>
 
+<!-- LISTA -->
+<h3>Produtos</h3>
 <div id="list" class="products"></div>
-
-</div>
 
 </div>
 
@@ -61,44 +37,11 @@ const supabase = window.supabase.createClient(
 "sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
 )
 
-// NAV
-function show(page){
-dash.style.display="none"
-prod.style.display="none"
+let editingId = null
 
-document.getElementById(page).style.display="block"
-}
-
-// DRAG & DROP
-const drop = document.getElementById("drop")
-
-drop.addEventListener("click",()=>files.click())
-
-drop.addEventListener("dragover",(e)=>{
-e.preventDefault()
-drop.style.background="#333"
-})
-
-drop.addEventListener("drop",(e)=>{
-e.preventDefault()
-files.files = e.dataTransfer.files
-preview({target:files})
-})
-
-// PREVIEW
-function preview(e){
-const div = document.getElementById("preview")
-div.innerHTML=""
-
-for(let f of e.target.files){
-const url = URL.createObjectURL(f)
-div.innerHTML+=`<img src="${url}">`
-}
-}
-
-// UPLOAD
+// 📤 UPLOAD
 async function upload(files){
-let urls=[]
+let urls = []
 
 for(let f of files){
 const name = Date.now()+"_"+f.name
@@ -112,50 +55,88 @@ urls.push(data.publicUrl)
 return urls
 }
 
-// SAVE
+// 💾 SALVAR OU EDITAR
 async function save(){
 
-const imgs = await upload(files.files)
+const files = document.getElementById("files").files
+let imgs = []
 
-await supabase.from("products").insert([{
-name:name.value,
-price:parseFloat(price.value),
-description:desc.value,
-images:imgs
-}])
+if(files.length > 0){
+imgs = await upload(files)
+}
 
+const product = {
+name: name.value,
+price: parseFloat(price.value),
+description: desc.value,
+images: imgs
+}
+
+// ✏️ UPDATE
+if(editingId){
+
+await supabase
+.from("products")
+.update(product)
+.eq("id", editingId)
+
+editingId = null
+document.getElementById("btnSave").innerText = "Salvar Produto"
+
+alert("Produto atualizado")
+load()
+return
+}
+
+// ➕ CREATE
+await supabase.from("products").insert([product])
+
+alert("Produto criado")
 load()
 }
 
-// LOAD
+// 📦 LISTAR
 async function load(){
+
 const { data } = await supabase.from("products").select("*")
 
-list.innerHTML=""
-total.innerText = data.length
+list.innerHTML = ""
 
 data.forEach(p=>{
-list.innerHTML+=`
+list.innerHTML += `
 <div class="card" onclick="edit(${p.id})">
 <strong>${p.name}</strong><br>
-R$ ${p.price}
-</div>`
+R$ ${p.price}<br>
+<button class="btn btn-danger" onclick="del(${p.id});event.stopPropagation()">Excluir</button>
+</div>
+`
 })
 }
 
-// EDITAR PRODUTO
+// ✏️ EDITAR
 async function edit(id){
+
 const { data } = await supabase
 .from("products")
 .select("*")
-.eq("id",id)
+.eq("id", id)
 .single()
+
+editingId = id
 
 name.value = data.name
 price.value = data.price
 desc.value = data.description
 
-show("prod")
+document.getElementById("btnSave").innerText = "Atualizar Produto"
+
+window.scrollTo({top:0,behavior:"smooth"})
+}
+
+// 🗑️ DELETE
+async function del(id){
+await supabase.from("products").delete().eq("id",id)
+load()
 }
 
 // INIT
