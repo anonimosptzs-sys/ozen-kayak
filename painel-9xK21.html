@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body style="display:none" class="container">
+
+<h2>Painel Admin</h2>
+
+<div class="card">
+<input id="name" class="input" placeholder="Nome">
+<input id="price" class="input" placeholder="Preço">
+<input id="whatsapp" class="input" placeholder="WhatsApp">
+<textarea id="desc" class="input" placeholder="Descrição"></textarea>
+
+<div class="drop" id="drop">Arraste imagens</div>
+<input type="file" id="files" multiple hidden>
+
+<div id="preview" class="preview"></div>
+<div id="progress" class="progress"></div>
+
+<button class="btn btn-main" onclick="save()">Salvar</button>
+</div>
+
+<div id="list"></div>
+
+<script>
+const supabase = window.supabase.createClient(
+"https://yaoyuizofpiqvqbberww.supabase.co",
+"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
+)
+
+// proteção
+;(async ()=>{
+const {data}=await supabase.auth.getUser()
+if(!data.user) location.href="login.html"
+else document.body.style.display="block"
+})()
+
+let filesArr=[]
+const drop=document.getElementById("drop")
+const input=document.getElementById("files")
+const preview=document.getElementById("preview")
+
+drop.onclick=()=>input.click()
+input.onchange=()=>{filesArr=[...input.files];render()}
+
+function render(){
+preview.innerHTML=""
+filesArr.forEach(f=>{
+const url=URL.createObjectURL(f)
+preview.innerHTML+=`<img src="${url}">`
+})
+}
+
+async function upload(){
+let urls=[]
+for(let f of filesArr){
+const name=Date.now()+"_"+f.name
+await supabase.storage.from("products").upload(name,f)
+const {data}=supabase.storage.from("products").getPublicUrl(name)
+urls.push(data.publicUrl)
+}
+return urls
+}
+
+async function save(){
+const imgs=await upload()
+
+await supabase.from("products").insert([{
+name:name.value,
+price:parseFloat(price.value),
+description:desc.value,
+whatsapp:whatsapp.value,
+images:imgs
+}])
+
+load()
+}
+
+async function load(){
+const {data}=await supabase.from("products").select("*")
+const div=document.getElementById("list")
+div.innerHTML=""
+
+data.forEach(p=>{
+div.innerHTML+=`
+<div class="card">
+<strong>${p.name}</strong>
+<button onclick="del(${p.id})">Excluir</button>
+</div>`
+})
+}
+
+async function del(id){
+await supabase.from("products").delete().eq("id",id)
+load()
+}
+
+load()
+</script>
+
+</body>
+</html>
