@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body class="container">
+
+<h2>Login</h2>
+
+<input id="email" class="input">
+<input id="password" type="password" class="input">
+
+<button class="btn btn-main" onclick="login()">Entrar</button>
+
+<script>
+const supabase = window.supabase.createClient(
+"https://yaoyuizofpiqvqbberww.supabase.co",
+"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
+)
+
+async function login(){
+const email=document.getElementById("email").value
+const password=document.getElementById("password").value
+
+const {error}=await supabase.auth.signInWithPassword({email,password})
+
+if(!error){
+location.href="painel-9xK21.html"
+}else{
+alert("Erro login")
+}
+}
+</script>
+
+</body>
+</html>
