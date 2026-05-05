@@ -6,40 +6,52 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-<body class="container">
+<body>
 
-<!-- 🔐 LOGIN -->
-<div id="loginBox" class="card">
-<h2>Painel Admin</h2>
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>Ozen Panel</h2>
 
-<input id="email" class="input" placeholder="Email">
-<input id="password" type="password" class="input" placeholder="Senha">
-
-<button class="btn btn-main" onclick="login()">Entrar</button>
+<div class="menu">
+<button onclick="show('dash')">📊 Dashboard</button>
+<button onclick="show('prod')">📦 Produtos</button>
+</div>
 </div>
 
-<!-- 🧑‍💻 DASHBOARD -->
-<div id="dashboard" style="display:none">
+<!-- MAIN -->
+<div class="main">
 
-<h2>Dashboard Produtos</h2>
+<!-- DASH -->
+<div id="dash">
+<h2>Dashboard</h2>
+<div class="card">
+<p>Total produtos: <span id="total"></span></p>
+</div>
+</div>
+
+<!-- PRODUTOS -->
+<div id="prod" style="display:none">
+
+<h2>Produtos</h2>
 
 <div class="card">
 
 <input id="name" class="input" placeholder="Nome">
 <input id="price" class="input" placeholder="Preço">
-<input id="whatsapp" class="input" placeholder="WhatsApp">
 <textarea id="desc" class="input" placeholder="Descrição"></textarea>
 
-<input type="file" id="files" multiple class="input" onchange="preview(event)">
+<div id="drop" class="drop">Arraste imagens aqui</div>
+<input type="file" id="files" multiple class="input" style="display:none">
 
 <div id="preview" class="preview"></div>
 
-<button class="btn btn-main" onclick="save()">Salvar Produto</button>
+<button class="btn btn-main" onclick="save()">Salvar</button>
 
 </div>
 
-<h3>Produtos</h3>
 <div id="list" class="products"></div>
+
+</div>
 
 </div>
 
@@ -49,48 +61,42 @@ const supabase = window.supabase.createClient(
 "sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
 )
 
-// 🔐 LOGIN REAL SUPABASE
-async function login(){
-const email = document.getElementById("email").value
-const password = document.getElementById("password").value
+// NAV
+function show(page){
+dash.style.display="none"
+prod.style.display="none"
 
-const { data, error } = await supabase.auth.signInWithPassword({
-email,
-password
+document.getElementById(page).style.display="block"
+}
+
+// DRAG & DROP
+const drop = document.getElementById("drop")
+
+drop.addEventListener("click",()=>files.click())
+
+drop.addEventListener("dragover",(e)=>{
+e.preventDefault()
+drop.style.background="#333"
 })
 
-if(error){
-alert(error.message)
-return
-}
+drop.addEventListener("drop",(e)=>{
+e.preventDefault()
+files.files = e.dataTransfer.files
+preview({target:files})
+})
 
-checkSession()
-}
-
-// 🔓 VERIFICA SESSÃO
-async function checkSession(){
-const { data } = await supabase.auth.getSession()
-
-if(data.session){
-document.getElementById("loginBox").style.display="none"
-document.getElementById("dashboard").style.display="block"
-load()
-}
-}
-
-// 🖼️ PREVIEW IMAGENS
+// PREVIEW
 function preview(e){
-const files = e.target.files
 const div = document.getElementById("preview")
 div.innerHTML=""
 
-for(let f of files){
+for(let f of e.target.files){
 const url = URL.createObjectURL(f)
-div.innerHTML += `<img src="${url}">`
+div.innerHTML+=`<img src="${url}">`
 }
 }
 
-// 📤 UPLOAD
+// UPLOAD
 async function upload(files){
 let urls=[]
 
@@ -106,21 +112,14 @@ urls.push(data.publicUrl)
 return urls
 }
 
-// 💾 SALVAR PRODUTO
+// SAVE
 async function save(){
 
-const files = document.getElementById("files").files
-if(files.length===0){
-alert("Selecione imagens")
-return
-}
-
-const imgs = await upload(files)
+const imgs = await upload(files.files)
 
 await supabase.from("products").insert([{
 name:name.value,
 price:parseFloat(price.value),
-whatsapp:whatsapp.value,
 description:desc.value,
 images:imgs
 }])
@@ -128,31 +127,39 @@ images:imgs
 load()
 }
 
-// 📦 LISTAR PRODUTOS
+// LOAD
 async function load(){
 const { data } = await supabase.from("products").select("*")
 
-const div = document.getElementById("list")
-div.innerHTML=""
+list.innerHTML=""
+total.innerText = data.length
 
 data.forEach(p=>{
-div.innerHTML+=`
-<div class="card">
+list.innerHTML+=`
+<div class="card" onclick="edit(${p.id})">
 <strong>${p.name}</strong><br>
-R$ ${p.price}<br>
-<button class="btn btn-danger" onclick="del(${p.id})">Excluir</button>
+R$ ${p.price}
 </div>`
 })
 }
 
-// 🗑️ DELETE
-async function del(id){
-await supabase.from("products").delete().eq("id",id)
-load()
+// EDITAR PRODUTO
+async function edit(id){
+const { data } = await supabase
+.from("products")
+.select("*")
+.eq("id",id)
+.single()
+
+name.value = data.name
+price.value = data.price
+desc.value = data.description
+
+show("prod")
 }
 
 // INIT
-checkSession()
+load()
 </script>
 
 </body>
