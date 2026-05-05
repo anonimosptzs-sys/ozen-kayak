@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Admin</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -10,74 +11,128 @@
 
 <h2>Painel Admin</h2>
 
-<input id="name" class="input" placeholder="Nome">
+<div class="card">
+<input id="name" class="input" placeholder="Nome do produto">
 <input id="price" class="input" placeholder="Preço">
 <input id="whatsapp" class="input" placeholder="WhatsApp">
 <textarea id="desc" class="input" placeholder="Descrição"></textarea>
 
 <input type="file" id="files" multiple class="input">
 
-<button class="btn btn-main" onclick="save()">Salvar</button>
+<button class="btn btn-main" onclick="save()">Salvar Produto</button>
+</div>
 
+<h3>Produtos</h3>
 <div id="list"></div>
 
 <script>
 const supabase = window.supabase.createClient(
 "https://yaoyuizofpiqvqbberww.supabase.co",
-"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
+"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc",
+{
+  auth: { persistSession: true }
+}
 )
 
+// 🔒 VERIFICA LOGIN
 ;(async ()=>{
-const {data}=await supabase.auth.getUser()
-if(!data.user) location.href="login.html"
-else document.body.style.display="block"
+const { data } = await supabase.auth.getSession()
+
+if(!data.session){
+  alert("Você precisa logar")
+  window.location.href = "login.html"
+  return
+}
+
+console.log("Logado:", data.session.user.email)
+document.body.style.display = "block"
 })()
 
+// 📤 UPLOAD IMAGENS
 async function upload(files){
-let urls=[]
+let urls = []
+
 for(let f of files){
-const name=Date.now()+f.name
-await supabase.storage.from("products").upload(name,f)
-const {data}=supabase.storage.from("products").getPublicUrl(name)
+const name = Date.now()+"_"+f.name
+
+const { error } = await supabase.storage
+.from("products")
+.upload(name, f)
+
+if(error){
+alert("Erro upload")
+return
+}
+
+const { data } = supabase.storage
+.from("products")
+.getPublicUrl(name)
+
 urls.push(data.publicUrl)
 }
+
 return urls
 }
 
+// 💾 SALVAR PRODUTO
 async function save(){
-const imgs=await upload(document.getElementById("files").files)
 
-await supabase.from("products").insert([{
-name:name.value,
-price:parseFloat(price.value),
-description:desc.value,
-whatsapp:whatsapp.value,
-images:imgs
+const files = document.getElementById("files").files
+
+if(files.length === 0){
+alert("Selecione imagem")
+return
+}
+
+const imgs = await upload(files)
+
+const { error } = await supabase.from("products").insert([{
+name: document.getElementById("name").value,
+price: parseFloat(document.getElementById("price").value),
+description: document.getElementById("desc").value,
+whatsapp: document.getElementById("whatsapp").value,
+images: imgs
 }])
 
+if(error){
+alert("Erro ao salvar")
+return
+}
+
+alert("Produto salvo")
 load()
 }
 
+// 📦 LISTAR PRODUTOS
 async function load(){
-const {data}=await supabase.from("products").select("*")
-const div=document.getElementById("list")
-div.innerHTML=""
+const { data } = await supabase.from("products").select("*")
+
+const div = document.getElementById("list")
+div.innerHTML = ""
 
 data.forEach(p=>{
-div.innerHTML+=`
+div.innerHTML += `
 <div class="card">
-<strong>${p.name}</strong>
+<strong>${p.name}</strong><br>
+R$ ${p.price}<br>
 <button class="btn btn-danger" onclick="del(${p.id})">Excluir</button>
 </div>`
 })
 }
 
+// 🗑️ DELETAR
 async function del(id){
-await supabase.from("products").delete().eq("id",id)
+await supabase.from("products").delete().eq("id", id)
 load()
 }
 
+// iniciar
 load()
+
+// debug auth
+supabase.auth.onAuthStateChange((event, session)=>{
+console.log("AUTH:", event, session)
+})
 </script>
 
 </body>
