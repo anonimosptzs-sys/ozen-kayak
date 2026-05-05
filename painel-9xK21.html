@@ -8,6 +8,14 @@
 
 <body class="container">
 
+<!-- 🔐 LOGIN -->
+<div id="loginBox" class="card">
+<h2>Senha do Painel</h2>
+<input id="senha" class="input" placeholder="Digite a senha">
+<button class="btn btn-main" onclick="checkAccess()">Entrar</button>
+</div>
+
+<!-- 🧑‍💻 PAINEL -->
 <div id="app" style="display:none">
 
 <h2>Painel Admin</h2>
@@ -29,35 +37,38 @@
 </div>
 
 <script>
-const PASSWORD = "admin123"; // 🔒 troca isso
+const PASSWORD = "admin123";
 
 const supabase = window.supabase.createClient(
 "https://yaoyuizofpiqvqbberww.supabase.co",
 "sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
 )
 
-// 🔐 senha simples
+// 🔐 LOGIN VISUAL
 function checkAccess(){
-let saved = localStorage.getItem("adm")
-
-if(saved === PASSWORD){
-document.getElementById("app").style.display="block"
-load()
-}else{
-let input = prompt("Senha do painel:")
+const input = document.getElementById("senha").value
 
 if(input === PASSWORD){
 localStorage.setItem("adm", PASSWORD)
-document.getElementById("app").style.display="block"
-load()
+start()
 }else{
 alert("Senha incorreta")
-location.reload()
-}
 }
 }
 
-// 📤 upload
+// 🚀 INICIAR PAINEL
+function start(){
+document.getElementById("loginBox").style.display="none"
+document.getElementById("app").style.display="block"
+load()
+}
+
+// 🔁 AUTO LOGIN
+if(localStorage.getItem("adm") === PASSWORD){
+start()
+}
+
+// 📤 UPLOAD
 async function upload(files){
 let urls=[]
 for(let f of files){
@@ -69,9 +80,8 @@ urls.push(data.publicUrl)
 return urls
 }
 
-// 💾 salvar
+// 💾 SALVAR
 async function save(){
-
 const files=document.getElementById("files").files
 
 if(files.length===0){
@@ -93,7 +103,7 @@ alert("Salvo")
 load()
 }
 
-// 📦 listar
+// 📦 LISTAR
 async function load(){
 const { data } = await supabase.from("products").select("*")
 const div=document.getElementById("list")
@@ -109,14 +119,11 @@ R$ ${p.price}<br>
 })
 }
 
-// 🗑️ delete
+// 🗑️ DELETE
 async function del(id){
 await supabase.from("products").delete().eq("id",id)
 load()
 }
-
-// iniciar
-checkAccess()
 </script>
 
 </body>
