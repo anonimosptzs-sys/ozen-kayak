@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+<title>Login</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body class="container">
 
-<h2>Login</h2>
+<h2>Login Admin</h2>
 
 <input id="email" class="input" placeholder="Email">
 <input id="password" type="password" class="input" placeholder="Senha">
 
-<button class="btn btn-main" onclick="login()">Entrar</button>
+<button class="btn btn-main" onclick="login(event)">Entrar</button>
 
 <script>
 const supabase = window.supabase.createClient(
@@ -19,9 +22,13 @@ const supabase = window.supabase.createClient(
 "sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
 )
 
-async function login(){
-const email = document.getElementById("email").value
-const password = document.getElementById("password").value
+async function login(e){
+e.preventDefault()
+
+const email = document.getElementById("email").value.trim()
+const password = document.getElementById("password").value.trim()
+
+console.log("Tentando login:", email)
 
 try{
 const { data, error } = await supabase.auth.signInWithPassword({
@@ -30,16 +37,19 @@ const { data, error } = await supabase.auth.signInWithPassword({
 })
 
 if(error){
+  console.error("Erro login:", error)
   alert("Erro: " + error.message)
   return
 }
 
-alert("Login feito")
+console.log("Login OK:", data)
+
+alert("Login realizado com sucesso")
 window.location.href = "painel-9xK21.html"
 
-}catch(e){
-alert("Erro inesperado")
-console.error(e)
+}catch(err){
+console.error("Erro inesperado:", err)
+alert("Erro inesperado, veja o console")
 }
 }
 </script>
