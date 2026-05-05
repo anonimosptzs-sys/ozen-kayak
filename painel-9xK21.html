@@ -2,7 +2,6 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Admin</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -12,14 +11,14 @@
 <h2>Painel Admin</h2>
 
 <div class="card">
-<input id="name" class="input" placeholder="Nome do produto">
+<input id="name" class="input" placeholder="Nome">
 <input id="price" class="input" placeholder="Preço">
 <input id="whatsapp" class="input" placeholder="WhatsApp">
 <textarea id="desc" class="input" placeholder="Descrição"></textarea>
 
 <input type="file" id="files" multiple class="input">
 
-<button class="btn btn-main" onclick="save()">Salvar Produto</button>
+<button class="btn btn-main" onclick="save()">Salvar</button>
 </div>
 
 <h3>Produtos</h3>
@@ -29,35 +28,38 @@
 const supabase = window.supabase.createClient(
 "https://yaoyuizofpiqvqbberww.supabase.co",
 "sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc",
-{
-  auth: { persistSession: true }
-}
+{ auth:{ persistSession:true } }
 )
+
+// 🔎 DEBUG AUTH
+supabase.auth.onAuthStateChange((event, session)=>{
+console.log("AUTH EVENT:", event)
+console.log("SESSION:", session)
+})
 
 // 🔒 VERIFICA LOGIN
 ;(async ()=>{
 const { data } = await supabase.auth.getSession()
 
 if(!data.session){
-  alert("Você precisa logar")
-  window.location.href = "login.html"
-  return
+alert("Faça login primeiro")
+window.location.href = "login.html"
+return
 }
 
-console.log("Logado:", data.session.user.email)
-document.body.style.display = "block"
+console.log("LOGADO:", data.session.user.email)
+document.body.style.display="block"
 })()
 
-// 📤 UPLOAD IMAGENS
+// 📤 UPLOAD
 async function upload(files){
-let urls = []
-
+let urls=[]
 for(let f of files){
-const name = Date.now()+"_"+f.name
+const name=Date.now()+"_"+f.name
 
 const { error } = await supabase.storage
 .from("products")
-.upload(name, f)
+.upload(name,f)
 
 if(error){
 alert("Erro upload")
@@ -70,48 +72,46 @@ const { data } = supabase.storage
 
 urls.push(data.publicUrl)
 }
-
 return urls
 }
 
-// 💾 SALVAR PRODUTO
+// 💾 SALVAR
 async function save(){
 
-const files = document.getElementById("files").files
+const files=document.getElementById("files").files
 
-if(files.length === 0){
+if(files.length===0){
 alert("Selecione imagem")
 return
 }
 
-const imgs = await upload(files)
+const imgs=await upload(files)
 
 const { error } = await supabase.from("products").insert([{
-name: document.getElementById("name").value,
-price: parseFloat(document.getElementById("price").value),
-description: document.getElementById("desc").value,
-whatsapp: document.getElementById("whatsapp").value,
-images: imgs
+name:document.getElementById("name").value,
+price:parseFloat(document.getElementById("price").value),
+description:document.getElementById("desc").value,
+whatsapp:document.getElementById("whatsapp").value,
+images:imgs
 }])
 
 if(error){
-alert("Erro ao salvar")
+alert("Erro salvar")
 return
 }
 
-alert("Produto salvo")
+alert("Salvo")
 load()
 }
 
-// 📦 LISTAR PRODUTOS
+// 📦 LISTAR
 async function load(){
 const { data } = await supabase.from("products").select("*")
-
-const div = document.getElementById("list")
-div.innerHTML = ""
+const div=document.getElementById("list")
+div.innerHTML=""
 
 data.forEach(p=>{
-div.innerHTML += `
+div.innerHTML+=`
 <div class="card">
 <strong>${p.name}</strong><br>
 R$ ${p.price}<br>
@@ -120,19 +120,13 @@ R$ ${p.price}<br>
 })
 }
 
-// 🗑️ DELETAR
+// 🗑️ DELETE
 async function del(id){
-await supabase.from("products").delete().eq("id", id)
+await supabase.from("products").delete().eq("id",id)
 load()
 }
 
-// iniciar
 load()
-
-// debug auth
-supabase.auth.onAuthStateChange((event, session)=>{
-console.log("AUTH:", event, session)
-})
 </script>
 
 </body>
