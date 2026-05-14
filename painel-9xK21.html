@@ -57,7 +57,10 @@ multiple
 class="input"
 >
 
-<div id="preview" class="preview"></div>
+<div
+id="preview"
+class="preview"
+></div>
 
 <button
 id="btnSave"
@@ -77,7 +80,10 @@ Sair
 
 <h3>Produtos</h3>
 
-<div id="list" class="products"></div>
+<div
+id="list"
+class="products"
+></div>
 
 </div>
 
@@ -95,10 +101,15 @@ let editingId = null
 
 async function protect(){
 
-const { data } =
-await supabase.auth.getSession()
+const {
+data,
+error
+} = await supabase.auth.getUser()
 
-if(!data.session){
+console.log(data)
+console.log(error)
+
+if(error || !data.user){
 
 window.location.href =
 "login.html"
@@ -149,7 +160,8 @@ document.getElementById("files").files
 
 for(let file of files){
 
-const reader = new FileReader()
+const reader =
+new FileReader()
 
 reader.onload = e => {
 
@@ -206,7 +218,8 @@ let imgs=[]
 
 if(files.length > 0){
 
-imgs = await upload(files)
+imgs =
+await upload(files)
 
 }
 
