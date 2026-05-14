@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -18,49 +19,49 @@
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
-"https://hjjonggbcrtajvtkrqms.supabase.co",
-"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
-)
-
-async function load(){
-
-const { data, error } = await supabase
-.from("products")
-.select("*")
-.order("id",{ascending:false})
-
-if(error){
-console.log(error)
-return
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-const div = document.getElementById("products")
+const supabase = window.supabase.createClient(
+  "https://hjjonggbcrtajvtkrqms.supabase.co",
+  "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
+)
 
-div.innerHTML = ""
+async function load() {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("id", { ascending: false })
 
-data.forEach(p=>{
+  if (error) {
+    console.log(error)
+    return
+  }
 
-div.innerHTML += `
-<div class="card">
+  const div = document.getElementById("products")
+  let html = ""
 
-<img src="${p.images?.[0] || ''}" class="product-img">
+  data.forEach(p => {
+    const img = Array.isArray(p.images) && p.images[0] ? esc(p.images[0]) : ''
+    html += `
+      <div class="card">
+        ${img ? `<img src="${img}" class="product-img">` : ''}
+        <h3>${esc(p.name)}</h3>
+        <strong>R$ ${esc(p.price)}</strong>
+        <a href="product.html?id=${esc(p.id)}">
+          <button class="btn btn-main">Saiba mais</button>
+        </a>
+      </div>
+    `
+  })
 
-<h3>${p.name}</h3>
-
-<strong>R$ ${p.price}</strong>
-
-<a href="product.html?id=${p.id}">
-<button class="btn btn-main">
-Saiba mais
-</button>
-</a>
-
-</div>
-`
-
-})
-
+  div.innerHTML = html
 }
 
 load()
