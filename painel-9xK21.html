@@ -4,122 +4,208 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Painel</title>
 </head>
 
 <body>
 
 <div class="container">
 
-<!-- FORM -->
 <div class="card">
 
 <h2>Painel Produtos</h2>
 
 <input id="name" class="input" placeholder="Nome">
+
 <input id="price" class="input" placeholder="Preço">
+
+<input id="whatsapp" class="input" placeholder="WhatsApp">
+
 <textarea id="desc" class="input" placeholder="Descrição"></textarea>
 
 <input type="file" id="files" multiple class="input">
 
-<button id="btnSave" class="btn btn-main" onclick="save()">Salvar Produto</button>
+<div id="preview" class="preview"></div>
+
+<button id="btnSave" class="btn btn-main">
+Salvar Produto
+</button>
 
 </div>
 
-<!-- LISTA -->
 <h3>Produtos</h3>
+
 <div id="list" class="products"></div>
 
 </div>
 
 <script>
 const supabase = window.supabase.createClient(
-"https://yaoyuizofpiqvqbberww.supabase.co",
-"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
+"https://hjjonggbcrtajvtkrqms.supabase.co",
+"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
 )
 
 let editingId = null
 
-// 📤 UPLOAD
+async function checkAuth(){
+
+const { data } = await supabase.auth.getSession()
+
+if(!data.session){
+window.location.href = "login.html"
+return
+}
+
+load()
+
+}
+
+document
+.getElementById("files")
+.addEventListener("change", previewImages)
+
+function previewImages(){
+
+const preview = document.getElementById("preview")
+
+preview.innerHTML = ""
+
+const files = document.getElementById("files").files
+
+for(let file of files){
+
+const reader = new FileReader()
+
+reader.onload = e => {
+
+preview.innerHTML += `
+<img src="${e.target.result}">
+`
+
+}
+
+reader.readAsDataURL(file)
+
+}
+
+}
+
 async function upload(files){
-let urls = []
+
+let urls=[]
 
 for(let f of files){
-const name = Date.now()+"_"+f.name
 
-await supabase.storage.from("products").upload(name,f)
+const fileName = Date.now()+"_"+f.name
 
-const { data } = supabase.storage.from("products").getPublicUrl(name)
+await supabase
+.storage
+.from("products")
+.upload(fileName,f)
+
+const { data } = supabase
+.storage
+.from("products")
+.getPublicUrl(fileName)
+
 urls.push(data.publicUrl)
+
 }
 
 return urls
+
 }
 
-// 💾 SALVAR OU EDITAR
+document
+.getElementById("btnSave")
+.addEventListener("click", save)
+
 async function save(){
 
 const files = document.getElementById("files").files
-let imgs = []
+
+let imgs=[]
 
 if(files.length > 0){
 imgs = await upload(files)
 }
 
 const product = {
-name: name.value,
-price: parseFloat(price.value),
-description: desc.value,
-images: imgs
+name:name.value,
+price:parseFloat(price.value),
+whatsapp:whatsapp.value,
+description:desc.value,
+images:imgs
 }
 
-// ✏️ UPDATE
 if(editingId){
 
 await supabase
 .from("products")
 .update(product)
-.eq("id", editingId)
+.eq("id",editingId)
 
 editingId = null
-document.getElementById("btnSave").innerText = "Salvar Produto"
 
-alert("Produto atualizado")
-load()
-return
+btnSave.innerText = "Salvar Produto"
+
+}else{
+
+await supabase
+.from("products")
+.insert([product])
+
 }
 
-// ➕ CREATE
-await supabase.from("products").insert([product])
+clearForm()
 
-alert("Produto criado")
 load()
+
 }
 
-// 📦 LISTAR
 async function load(){
 
-const { data } = await supabase.from("products").select("*")
+const { data } = await supabase
+.from("products")
+.select("*")
+.order("id",{ascending:false})
 
 list.innerHTML = ""
 
 data.forEach(p=>{
+
 list.innerHTML += `
-<div class="card" onclick="edit(${p.id})">
-<strong>${p.name}</strong><br>
-R$ ${p.price}<br>
-<button class="btn btn-danger" onclick="del(${p.id});event.stopPropagation()">Excluir</button>
+<div class="card">
+
+<img src="${p.images?.[0] || ''}" class="product-img">
+
+<h3>${p.name}</h3>
+
+<strong>R$ ${p.price}</strong>
+
+<button class="btn btn-main"
+onclick="edit(${p.id})">
+Editar
+</button>
+
+<button class="btn btn-danger"
+onclick="del(${p.id})">
+Excluir
+</button>
+
 </div>
 `
+
 })
+
 }
 
-// ✏️ EDITAR
 async function edit(id){
 
 const { data } = await supabase
 .from("products")
 .select("*")
-.eq("id", id)
+.eq("id",id)
 .single()
 
 editingId = id
@@ -127,20 +213,40 @@ editingId = id
 name.value = data.name
 price.value = data.price
 desc.value = data.description
+whatsapp.value = data.whatsapp
 
-document.getElementById("btnSave").innerText = "Atualizar Produto"
+btnSave.innerText = "Atualizar Produto"
 
-window.scrollTo({top:0,behavior:"smooth"})
+window.scrollTo({
+top:0,
+behavior:"smooth"
+})
+
 }
 
-// 🗑️ DELETE
 async function del(id){
-await supabase.from("products").delete().eq("id",id)
+
+await supabase
+.from("products")
+.delete()
+.eq("id",id)
+
 load()
+
 }
 
-// INIT
-load()
+function clearForm(){
+
+name.value=""
+price.value=""
+desc.value=""
+whatsapp.value=""
+files.value=""
+preview.innerHTML=""
+
+}
+
+checkAuth()
 </script>
 
 </body>
