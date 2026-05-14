@@ -4,32 +4,60 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Produto</title>
 </head>
 
-<body class="container">
+<body>
 
-<div id="p"></div>
+<div class="container">
+
+<div id="product"></div>
+
+</div>
 
 <script>
 const supabase = window.supabase.createClient(
-"https://yaoyuizofpiqvqbberww.supabase.co",
-"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc"
+"https://hjjonggbcrtajvtkrqms.supabase.co",
+"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
 )
 
-const id=new URLSearchParams(location.search).get("id")
+const id = new URLSearchParams(location.search).get("id")
 
 async function load(){
-const {data}=await supabase.from("products").select("*").eq("id",id).single()
 
-document.getElementById("p").innerHTML=`
+const { data, error } = await supabase
+.from("products")
+.select("*")
+.eq("id",id)
+.single()
+
+if(error){
+console.log(error)
+return
+}
+
+document.getElementById("product").innerHTML = `
+<div class="card">
+
 <h1>${data.name}</h1>
-${data.images.map(i=>`<img src="${i}" width="100%">`).join("")}
+
+${data.images.map(i=>`
+<img src="${i}" class="product-img">
+`).join("")}
+
 <p>${data.description}</p>
+
 <strong>R$ ${data.price}</strong>
+
 <a href="https://wa.me/${data.whatsapp}">
-<button class="btn btn-main">Comprar</button>
+<button class="btn btn-main">
+Comprar
+</button>
 </a>
+
+</div>
 `
+
 }
 
 load()
