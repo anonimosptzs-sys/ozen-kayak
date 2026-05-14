@@ -2,13 +2,14 @@
 <html>
 
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Login</title>
 
 <link rel="stylesheet" href="style.css">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<title>Login</title>
 </head>
 
 <body>
@@ -35,6 +36,7 @@ placeholder="Senha"
 <button
 id="btnLogin"
 class="btn btn-main"
+type="button"
 >
 Entrar
 </button>
@@ -45,6 +47,10 @@ Entrar
 
 <script>
 
+window.addEventListener(
+"DOMContentLoaded",
+()=>{
+
 const supabase =
 window.supabase.createClient(
 "https://hjjonggbcrtajvtkrqms.supabase.co",
@@ -54,9 +60,9 @@ window.supabase.createClient(
 const btn =
 document.getElementById("btnLogin")
 
-btn.addEventListener(
-"click",
-async ()=>{
+btn.onclick = async ()=>{
+
+console.log("BOTAO FUNCIONOU")
 
 const email =
 document
@@ -70,9 +76,13 @@ document
 .value
 .trim()
 
-console.log("BOTAO CLICADO")
+if(!email || !password){
 
-try{
+alert("Preencha tudo")
+
+return
+
+}
 
 const { data, error } =
 await supabase.auth.signInWithPassword({
@@ -95,12 +105,6 @@ alert("LOGIN OK")
 
 window.location.href =
 "painel-9xK21.html"
-
-}catch(e){
-
-console.log(e)
-
-alert(e.message)
 
 }
 
