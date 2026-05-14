@@ -1,123 +1,69 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Login</title>
-
 <link rel="stylesheet" href="style.css">
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
 
 <div class="container small">
-
-<div class="card">
-
-<h2>Login Admin</h2>
-
-<input
-id="email"
-class="input"
-placeholder="Email"
->
-
-<input
-id="password"
-type="password"
-class="input"
-placeholder="Senha"
->
-
-<button
-id="btnLogin"
-class="btn btn-main"
-type="button"
->
-Entrar
-</button>
-
-</div>
-
+  <div class="card">
+    <h2>Login Admin</h2>
+    <input id="email" class="input" placeholder="Email">
+    <input id="password" type="password" class="input" placeholder="Senha">
+    <button id="btnLogin" class="btn btn-main" type="button">Entrar</button>
+  </div>
 </div>
 
 <script>
+window.addEventListener("DOMContentLoaded", () => {
+  const supabase = window.supabase.createClient(
+    "https://hjjonggbcrtajvtkrqms.supabase.co",
+    "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE",
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true
+      }
+    }
+  )
 
-window.addEventListener(
-"DOMContentLoaded",
-()=>{
+  document.getElementById("btnLogin").onclick = async () => {
+    const email = document.getElementById("email").value.trim()
+    const password = document.getElementById("password").value.trim()
 
-const supabase =
-window.supabase.createClient(
-"https://hjjonggbcrtajvtkrqms.supabase.co",
-"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE",
-{
-auth:{
-persistSession:true,
-autoRefreshToken:true
-}
-}
-)
+    if (!email || !password) {
+      alert("Preencha todos os campos")
+      return
+    }
 
-document
-.getElementById("btnLogin")
-.onclick = async ()=>{
+    const btn = document.getElementById("btnLogin")
+    btn.disabled = true
+    btn.textContent = "Entrando..."
 
-const email =
-document
-.getElementById("email")
-.value
-.trim()
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
 
-const password =
-document
-.getElementById("password")
-.value
-.trim()
+    // Log removido (não exibir dados sensíveis)
+    if (error) {
+      alert(error.message)
+      btn.disabled = false
+      btn.textContent = "Entrar"
+      return
+    }
 
-if(!email || !password){
-
-alert("Preencha tudo")
-
-return
-
-}
-
-const { data, error } =
-await supabase.auth.signInWithPassword({
-email,
-password
+    alert("Login realizado com sucesso!")
+    setTimeout(() => {
+      window.location.href = "painel-9xK21.html"
+    }, 500)
+  }
 })
-
-console.log(data)
-console.log(error)
-
-if(error){
-
-alert(error.message)
-
-return
-
-}
-
-alert("LOGIN OK")
-
-setTimeout(()=>{
-
-window.location.href =
-"painel-9xK21.html"
-
-},500)
-
-}
-
-}
-)
-
 </script>
 
 </body>
