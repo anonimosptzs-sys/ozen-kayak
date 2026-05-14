@@ -50,7 +50,7 @@ const supabase = window.supabase.createClient(
 )
 
 let editingId = null
-let currentImages = [] // armazena as imagens do produto sendo editado
+let currentImages = []
 
 function get(id) {
   return document.getElementById(id)
@@ -102,7 +102,6 @@ async function save() {
   if (files.length > 0) {
     imgs = await upload(files)
   } else if (editingId) {
-    // se estiver editando e não escolheu novas imagens, mantém as existentes
     imgs = currentImages
   }
 
@@ -203,7 +202,6 @@ async function edit(id) {
 
 async function del(id) {
   if (!confirm("Tem certeza que deseja excluir este produto?")) return
-
   await supabase.from("products").delete().eq("id", id)
   load()
 }
