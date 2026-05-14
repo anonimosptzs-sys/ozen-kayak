@@ -45,12 +45,11 @@ window.addEventListener("DOMContentLoaded", () => {
     btn.disabled = true
     btn.textContent = "Entrando..."
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     })
 
-    // Log removido (não exibir dados sensíveis)
     if (error) {
       alert(error.message)
       btn.disabled = false
