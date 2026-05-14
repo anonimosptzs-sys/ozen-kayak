@@ -1,34 +1,76 @@
 <!DOCTYPE html>
 <html>
+
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Painel Admin</title>
+
 <link rel="stylesheet" href="style.css">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<title>Painel</title>
 </head>
 
 <body>
 
 <div class="container">
 
+<div id="loading">
+<h2>Verificando acesso...</h2>
+</div>
+
+<div id="panel" style="display:none;">
+
 <div class="card">
 
 <h2>Painel Produtos</h2>
 
-<input id="name" class="input" placeholder="Nome">
+<input
+id="name"
+class="input"
+placeholder="Nome"
+>
 
-<input id="price" class="input" placeholder="Preço">
+<input
+id="price"
+class="input"
+placeholder="Preço"
+>
 
-<input id="whatsapp" class="input" placeholder="WhatsApp">
+<input
+id="whatsapp"
+class="input"
+placeholder="WhatsApp"
+>
 
-<textarea id="desc" class="input" placeholder="Descrição"></textarea>
+<textarea
+id="desc"
+class="input"
+placeholder="Descrição"
+></textarea>
 
-<input type="file" id="files" multiple class="input">
+<input
+type="file"
+id="files"
+multiple
+class="input"
+>
 
 <div id="preview" class="preview"></div>
 
-<button id="btnSave" class="btn btn-main">
+<button
+id="btnSave"
+class="btn btn-main"
+>
 Salvar Produto
+</button>
+
+<button
+id="logout"
+class="btn btn-danger"
+>
+Sair
 </button>
 
 </div>
@@ -39,38 +81,71 @@ Salvar Produto
 
 </div>
 
+</div>
+
 <script>
-const supabase = window.supabase.createClient(
+
+const supabase =
+window.supabase.createClient(
 "https://hjjonggbcrtajvtkrqms.supabase.co",
 "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
 )
 
 let editingId = null
 
-async function checkAuth(){
+async function protect(){
 
-const { data } = await supabase.auth.getSession()
+const { data } =
+await supabase.auth.getSession()
 
 if(!data.session){
-window.location.href = "login.html"
+
+window.location.href =
+"login.html"
+
 return
+
 }
+
+document
+.getElementById("loading")
+.style.display = "none"
+
+document
+.getElementById("panel")
+.style.display = "block"
 
 load()
 
 }
 
 document
+.getElementById("logout")
+.onclick = async ()=>{
+
+await supabase.auth.signOut()
+
+window.location.href =
+"login.html"
+
+}
+
+document
 .getElementById("files")
-.addEventListener("change", previewImages)
+.addEventListener(
+"change",
+previewImages
+)
 
 function previewImages(){
 
-const preview = document.getElementById("preview")
+const preview =
+document.getElementById("preview")
 
 preview.innerHTML = ""
 
-const files = document.getElementById("files").files
+const files =
+document.getElementById("files").files
 
 for(let file of files){
 
@@ -96,14 +171,16 @@ let urls=[]
 
 for(let f of files){
 
-const fileName = Date.now()+"_"+f.name
+const fileName =
+Date.now()+"_"+f.name
 
 await supabase
 .storage
 .from("products")
 .upload(fileName,f)
 
-const { data } = supabase
+const { data } =
+supabase
 .storage
 .from("products")
 .getPublicUrl(fileName)
@@ -118,16 +195,19 @@ return urls
 
 document
 .getElementById("btnSave")
-.addEventListener("click", save)
+.onclick = save
 
 async function save(){
 
-const files = document.getElementById("files").files
+const files =
+document.getElementById("files").files
 
 let imgs=[]
 
 if(files.length > 0){
+
 imgs = await upload(files)
+
 }
 
 const product = {
@@ -147,7 +227,8 @@ await supabase
 
 editingId = null
 
-btnSave.innerText = "Salvar Produto"
+btnSave.innerText =
+"Salvar Produto"
 
 }else{
 
@@ -165,7 +246,8 @@ load()
 
 async function load(){
 
-const { data } = await supabase
+const { data } =
+await supabase
 .from("products")
 .select("*")
 .order("id",{ascending:false})
@@ -177,19 +259,28 @@ data.forEach(p=>{
 list.innerHTML += `
 <div class="card">
 
-<img src="${p.images?.[0] || ''}" class="product-img">
+<img
+src="${p.images?.[0] || ''}"
+class="product-img"
+>
 
 <h3>${p.name}</h3>
 
-<strong>R$ ${p.price}</strong>
+<strong>
+R$ ${p.price}
+</strong>
 
-<button class="btn btn-main"
-onclick="edit(${p.id})">
+<button
+class="btn btn-main"
+onclick="edit(${p.id})"
+>
 Editar
 </button>
 
-<button class="btn btn-danger"
-onclick="del(${p.id})">
+<button
+class="btn btn-danger"
+onclick="del(${p.id})"
+>
 Excluir
 </button>
 
@@ -202,7 +293,8 @@ Excluir
 
 async function edit(id){
 
-const { data } = await supabase
+const { data } =
+await supabase
 .from("products")
 .select("*")
 .eq("id",id)
@@ -215,7 +307,8 @@ price.value = data.price
 desc.value = data.description
 whatsapp.value = data.whatsapp
 
-btnSave.innerText = "Atualizar Produto"
+btnSave.innerText =
+"Atualizar Produto"
 
 window.scrollTo({
 top:0,
@@ -246,7 +339,8 @@ preview.innerHTML=""
 
 }
 
-checkAuth()
+protect()
+
 </script>
 
 </body>
