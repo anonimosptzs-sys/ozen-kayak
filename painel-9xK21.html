@@ -17,7 +17,6 @@
 <div
 id="panel"
 class="container"
-style="display:none;"
 >
 
 <div class="card">
@@ -104,11 +103,17 @@ let editingId = null
 
 async function protect(){
 
+try{
+
 const {
-data
+data,
+error
 } = await supabase.auth.getSession()
 
-if(!data.session){
+console.log(data)
+console.log(error)
+
+if(error || !data.session){
 
 window.location.href =
 "login.html"
@@ -117,11 +122,16 @@ return
 
 }
 
-document
-.getElementById("panel")
-.style.display = "block"
-
 load()
+
+}catch(e){
+
+console.log(e)
+
+window.location.href =
+"login.html"
+
+}
 
 }
 
