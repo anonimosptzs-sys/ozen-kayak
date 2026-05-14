@@ -147,6 +147,8 @@ img {
   background: #1a1a2e;
   border: 1px dashed #4a4aff;
   cursor: pointer;
+  width: 100%;
+  margin: 8px 0;
 }
 
 #files:hover {
@@ -167,12 +169,12 @@ img {
 
 <div id="panel">
 
-<h2>🛍️ Painel ADM</h2>
+<h2>Painel ADM</h2>
 
 <input id="name" placeholder="Nome do produto *" required>
-<input id="price" placeholder="Preço R$ *" type="number" step="0.01" min="0" required>
+<input id="price" placeholder="Preco R$ *" type="number" step="0.01" min="0" required>
 <input id="whatsapp" placeholder="WhatsApp (ex: 5511999999999)">
-<textarea id="desc" placeholder="Descrição do produto"></textarea>
+<textarea id="desc" placeholder="Descricao do produto"></textarea>
 
 <input type="file" id="files" multiple accept="image/*" title="Selecione as imagens do produto">
 
@@ -181,14 +183,14 @@ img {
 </div>
 
 <div>
-  <button id="save">💾 Salvar Produto</button>
-  <button id="cancel" style="display:none">❌ Cancelar</button>
-  <button id="logout">🚪 Sair</button>
+  <button id="save">Salvar Produto</button>
+  <button id="cancel" style="display:none">Cancelar</button>
+  <button id="logout">Sair</button>
 </div>
 
 <div id="message"></div>
 
-<h3>📦 Produtos Cadastrados</h3>
+<h3>Produtos Cadastrados</h3>
 <div id="list">
   <p style="color:#888">Carregando...</p>
 </div>
@@ -197,7 +199,7 @@ img {
 
 <script>
 
-// ✅ CHAVES CORRETAS DO SUPABASE
+// CHAVES DO SUPABASE
 const SUPABASE_URL = "https://hjjonggbcrtajvtkrqms.supabase.co"
 const SUPABASE_KEY = "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
 
@@ -205,52 +207,60 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let editingId = null
 
-// Função auxiliar para pegar elementos
+// Funcao auxiliar
 function el(id) {
   return document.getElementById(id)
 }
 
-// Função para mostrar mensagens
+// Mostrar mensagens
 function showMessage(text, isError = false) {
   const msg = el("message")
   msg.textContent = text
   msg.style.display = "block"
   msg.style.background = isError ? "#ff4444" : "#44aa44"
+  msg.style.color = "#fff"
   
   setTimeout(() => {
     msg.style.display = "none"
   }, 3000)
 }
 
-// 🔐 Verificar autenticação
+// Verificar autenticacao
 async function init() {
   try {
+    console.log("Verificando autenticacao...")
     const { data: { session }, error } = await supabase.auth.getSession()
     
-    if (error) throw error
+    if (error) {
+      console.error("Erro ao verificar sessao:", error)
+      throw error
+    }
     
     if (!session) {
-      console.log("❌ Sem sessão ativa")
-      showMessage("Faça login primeiro!", true)
+      console.log("Sem sessao ativa, redirecionando...")
+      showMessage("Faca login primeiro!", true)
       setTimeout(() => {
         window.location.href = "login.html"
       }, 1500)
       return
     }
     
-    console.log("✅ Usuário autenticado:", session.user.email)
+    console.log("Usuario autenticado:", session.user.email)
     await loadProducts()
     
   } catch (error) {
-    console.error("Erro na autenticação:", error.message)
-    showMessage("Erro de autenticação: " + error.message, true)
+    console.error("Erro na autenticacao:", error.message)
+    showMessage("Erro: " + error.message, true)
   }
 }
 
-// 🖼️ Preview das imagens
+// Preview das imagens
 function previewImages() {
+  console.log("previewImages chamada")
   const preview = el("preview")
   const files = el("files").files
+  
+  console.log("Arquivos selecionados:", files.length)
   
   if (files.length === 0) {
     preview.innerHTML = '<span style="color:#888">Nenhuma imagem selecionada</span>'
@@ -259,29 +269,32 @@ function previewImages() {
   
   preview.innerHTML = ""
   
-  Array.from(files).forEach(file => {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
     const reader = new FileReader()
     
     reader.onload = function(e) {
-      preview.innerHTML += `<img src="${e.target.result}" alt="Preview">`
+      preview.innerHTML += '<img src="' + e.target.result + '" alt="Preview">'
     }
     
     reader.readAsDataURL(file)
-  })
+  }
 }
 
-// 📤 Upload de imagens para o Storage
+// Upload de imagens
 async function uploadImages(files) {
   const urls = []
   
-  for (let file of files) {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    
     try {
       const timestamp = Date.now()
       const randomStr = Math.random().toString(36).substring(2, 8)
       const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
-      const fileName = `${timestamp}_${randomStr}_${safeName}`
+      const fileName = timestamp + "_" + randomStr + "_" + safeName
       
-      console.log(`📤 Enviando: ${fileName}`)
+      console.log("Enviando:", fileName)
       
       const { data, error } = await supabase.storage
         .from("products")
@@ -295,17 +308,17 @@ async function uploadImages(files) {
         throw error
       }
       
-      console.log("✅ Upload concluído:", data)
+      console.log("Upload OK:", data)
       
-      const { data: { publicUrl } } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from("products")
         .getPublicUrl(fileName)
       
-      urls.push(publicUrl)
-      console.log("🔗 URL:", publicUrl)
+      urls.push(urlData.publicUrl)
+      console.log("URL:", urlData.publicUrl)
       
     } catch (error) {
-      console.error("❌ Falha no upload:", error.message)
+      console.error("Falha no upload:", error.message)
       showMessage("Erro ao enviar imagem: " + error.message, true)
     }
   }
@@ -313,19 +326,23 @@ async function uploadImages(files) {
   return urls
 }
 
-// 💾 Salvar produto
+// Salvar produto
 async function saveProduct() {
+  console.log("saveProduct chamada")
+  
   try {
     const name = el("name").value.trim()
     const price = el("price").value
     
+    console.log("Nome:", name, "Preco:", price)
+    
     if (!name) {
-      showMessage("⚠️ Preencha o nome do produto!", true)
+      showMessage("Preencha o nome do produto!", true)
       return
     }
     
     if (!price || Number(price) <= 0) {
-      showMessage("⚠️ Preencha um preço válido!", true)
+      showMessage("Preencha um preco valido!", true)
       return
     }
     
@@ -336,7 +353,7 @@ async function saveProduct() {
     let newImages = []
     
     if (files.length > 0) {
-      console.log(`📸 Processando ${files.length} imagens...`)
+      console.log("Processando", files.length, "imagens...")
       newImages = await uploadImages(files)
     }
     
@@ -367,7 +384,7 @@ async function saveProduct() {
       productData.id = editingId
     }
     
-    console.log("💾 Salvando produto:", productData)
+    console.log("Salvando produto:", productData)
     
     const { error } = await supabase
       .from("products")
@@ -375,25 +392,25 @@ async function saveProduct() {
     
     if (error) throw error
     
-    console.log("✅ Produto salvo com sucesso!")
-    showMessage("Produto salvo com sucesso! ✅")
+    console.log("Produto salvo com sucesso!")
+    showMessage("Produto salvo com sucesso!")
     
     clearForm()
     await loadProducts()
     
   } catch (error) {
-    console.error("❌ Erro ao salvar:", error)
+    console.error("Erro ao salvar:", error)
     showMessage("Erro ao salvar: " + error.message, true)
   } finally {
     el("save").disabled = false
-    el("save").textContent = "💾 Salvar Produto"
+    el("save").textContent = "Salvar Produto"
   }
 }
 
-// 📦 Carregar produtos
+// Carregar produtos
 async function loadProducts() {
   try {
-    console.log("📦 Carregando produtos...")
+    console.log("Carregando produtos...")
     
     const { data, error } = await supabase
       .from("products")
@@ -405,17 +422,24 @@ async function loadProducts() {
     const list = el("list")
     
     if (!data || data.length === 0) {
-      list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">📭 Nenhum produto cadastrado</p>'
+      list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">Nenhum produto cadastrado</p>'
       return
     }
     
     list.innerHTML = ""
     
-    data.forEach(product => {
+    for (let i = 0; i < data.length; i++) {
+      const product = data[i]
       const images = product.images || []
-      const imagesHtml = images.length > 0 
-        ? images.slice(0, 4).map(img => `<img src="${img}" alt="${product.name}" loading="lazy">`).join("")
-        : '<span style="color:#888">Sem imagens</span>'
+      
+      let imagesHtml = ''
+      if (images.length > 0) {
+        for (let j = 0; j < Math.min(images.length, 4); j++) {
+          imagesHtml += '<img src="' + images[j] + '" alt="' + product.name + '" loading="lazy">'
+        }
+      } else {
+        imagesHtml = '<span style="color:#888">Sem imagens</span>'
+      }
       
       list.innerHTML += `
         <div class="card">
@@ -428,36 +452,36 @@ async function loadProducts() {
             R$ ${Number(product.price).toFixed(2)}
           </p>
           
-          ${product.description ? `<p style="color:#aaa;margin:5px 0;">${product.description}</p>` : ''}
+          ${product.description ? '<p style="color:#aaa;margin:5px 0;">' + product.description + '</p>' : ''}
           
           <p style="color:#888;font-size:0.85em;">
-            📱 WhatsApp: ${product.whatsapp || 'Não informado'}
+            WhatsApp: ${product.whatsapp || 'Nao informado'}
           </p>
           
           <div style="margin-top:10px;">
             <button onclick="editProduct(${product.id})" style="background:#44aa44;">
-              ✏️ Editar
+              Editar
             </button>
             <button onclick="deleteProduct(${product.id})" style="background:#ff4444;">
-              🗑️ Excluir
+              Excluir
             </button>
           </div>
         </div>
       `
-    })
+    }
     
-    console.log(`✅ ${data.length} produtos carregados`)
+    console.log(data.length + " produtos carregados")
     
   } catch (error) {
-    console.error("❌ Erro ao carregar:", error)
-    el("list").innerHTML = `<p style="color:red;">Erro ao carregar produtos: ${error.message}</p>`
+    console.error("Erro ao carregar:", error)
+    el("list").innerHTML = '<p style="color:red;">Erro: ' + error.message + '</p>'
   }
 }
 
-// ✏️ Editar produto
+// Editar produto
 async function editProduct(id) {
   try {
-    console.log("✏️ Editando produto:", id)
+    console.log("Editando produto:", id)
     
     const { data, error } = await supabase
       .from("products")
@@ -477,30 +501,30 @@ async function editProduct(id) {
     preview.innerHTML = ""
     
     if (data.images && data.images.length > 0) {
-      data.images.forEach(img => {
-        preview.innerHTML += `<img src="${img}" alt="Imagem existente">`
-      })
+      for (let i = 0; i < data.images.length; i++) {
+        preview.innerHTML += '<img src="' + data.images[i] + '" alt="Imagem existente">'
+      }
     } else {
       preview.innerHTML = '<span style="color:#888">Produto sem imagens</span>'
     }
     
-    el("save").textContent = "📝 Atualizar Produto"
+    el("save").textContent = "Atualizar Produto"
     el("cancel").style.display = "inline-block"
     
     window.scrollTo({ top: 0, behavior: 'smooth' })
     
   } catch (error) {
-    console.error("❌ Erro ao editar:", error)
-    showMessage("Erro ao carregar produto: " + error.message, true)
+    console.error("Erro ao editar:", error)
+    showMessage("Erro: " + error.message, true)
   }
 }
 
-// 🗑️ Deletar produto
+// Deletar produto
 async function deleteProduct(id) {
   if (!confirm("Tem certeza que deseja excluir este produto?")) return
   
   try {
-    console.log("🗑️ Excluindo produto:", id)
+    console.log("Excluindo produto:", id)
     
     const { error } = await supabase
       .from("products")
@@ -509,16 +533,16 @@ async function deleteProduct(id) {
     
     if (error) throw error
     
-    showMessage("Produto excluído com sucesso! 🗑️")
+    showMessage("Produto excluido!")
     await loadProducts()
     
   } catch (error) {
-    console.error("❌ Erro ao excluir:", error)
-    showMessage("Erro ao excluir: " + error.message, true)
+    console.error("Erro ao excluir:", error)
+    showMessage("Erro: " + error.message, true)
   }
 }
 
-// 🧹 Limpar formulário
+// Limpar formulario
 function clearForm() {
   editingId = null
   
@@ -529,43 +553,44 @@ function clearForm() {
   el("files").value = ""
   el("preview").innerHTML = '<span style="color:#888">Nenhuma imagem selecionada</span>'
   
-  el("save").textContent = "💾 Salvar Produto"
+  el("save").textContent = "Salvar Produto"
   el("cancel").style.display = "none"
 }
 
-// 🚪 Logout
+// Logout
 async function logout() {
   if (!confirm("Tem certeza que deseja sair?")) return
   
   try {
+    console.log("Fazendo logout...")
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     
     window.location.href = "login.html"
     
   } catch (error) {
-    console.error("❌ Erro no logout:", error)
-    showMessage("Erro ao sair: " + error.message, true)
+    console.error("Erro no logout:", error)
+    showMessage("Erro: " + error.message, true)
   }
 }
 
-// 🎯 Event Listeners
-el("files").addEventListener("change", previewImages)
-el("save").addEventListener("click", saveProduct)
-el("cancel").addEventListener("click", clearForm)
-el("logout").addEventListener("click", logout)
-
-// Atalho: Ctrl+S para salvar
-document.addEventListener("keydown", function(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-    e.preventDefault()
-    saveProduct()
-  }
-})
-
-// 🚀 Iniciar
-console.log("🚀 Iniciando aplicação...")
-init()
+// QUANDO A PAGINA CARREGAR
+window.onload = function() {
+  console.log("Pagina carregada, configurando eventos...")
+  
+  // Configurar eventos
+  document.getElementById("files").onchange = previewImages
+  document.getElementById("save").onclick = saveProduct
+  document.getElementById("cancel").onclick = clearForm
+  document.getElementById("logout").onclick = logout
+  
+  console.log("Eventos configurados!")
+  console.log("save button:", document.getElementById("save"))
+  console.log("logout button:", document.getElementById("logout"))
+  
+  // Iniciar app
+  init()
+}
 
 </script>
 
