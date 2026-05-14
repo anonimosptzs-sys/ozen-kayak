@@ -53,7 +53,7 @@ async function load() {
     ? data.images.map(i => `<img src="${esc(i)}" class="product-img">`).join('')
     : ''
 
-  const whatsapp = data.whatsapp && data.whatsapp.replace(/\D/g, '') // limpa o número
+  const whatsapp = data.whatsapp ? data.whatsapp.replace(/\D/g, '') : ''
   const whatsappLink = whatsapp ? `https://wa.me/${whatsapp}` : ''
 
   document.getElementById("product").innerHTML = `
