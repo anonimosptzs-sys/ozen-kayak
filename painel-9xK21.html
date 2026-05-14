@@ -7,13 +7,158 @@
 
 <title>Shop Admin</title>
 
-<link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{background:#0b1220;color:#fff;font-family:Arial}
-img{width:70px;height:70px;object-fit:cover;border-radius:8px;margin:3px}
-.card{background:#111;padding:15px;border-radius:10px;margin:10px}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0b1220;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+#panel {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+h2 {
+  margin-bottom: 20px;
+  color: #4a4aff;
+}
+
+h3 {
+  margin: 20px 0 10px;
+  color: #aaa;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #4a4aff;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 5px;
+  background: #4a4aff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #3a3aff;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+#cancel {
+  background: #666;
+}
+
+#cancel:hover {
+  background: #555;
+}
+
+#logout {
+  background: #ff4444;
+}
+
+#logout:hover {
+  background: #ff3333;
+}
+
+img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 3px;
+  border: 2px solid #333;
+}
+
+.card {
+  background: #111;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px 0;
+  border: 1px solid #222;
+}
+
+.card h3 {
+  color: #fff;
+  margin: 5px 0;
+}
+
+.card button {
+  padding: 6px 12px;
+  margin: 2px;
+  font-size: 12px;
+}
+
+.card button:first-of-type {
+  background: #44aa44;
+}
+
+.card button:last-of-type {
+  background: #ff4444;
+}
+
+#preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 10px 0;
+  padding: 10px;
+  background: #1a1a2e;
+  border-radius: 5px;
+  min-height: 50px;
+}
+
+#files {
+  padding: 10px;
+  background: #1a1a2e;
+  border: 1px dashed #4a4aff;
+  cursor: pointer;
+}
+
+#files:hover {
+  border-color: #fff;
+}
+
+#message {
+  padding: 10px;
+  border-radius: 5px;
+  margin: 10px 0;
+  display: none;
+}
 </style>
 
 </head>
@@ -22,224 +167,404 @@ img{width:70px;height:70px;object-fit:cover;border-radius:8px;margin:3px}
 
 <div id="panel">
 
-<h2>Painel ADM</h2>
+<h2>🛍️ Painel ADM</h2>
 
-<input id="name" placeholder="Nome">
-<input id="price" placeholder="Preço">
-<input id="whatsapp" placeholder="WhatsApp">
-<textarea id="desc" placeholder="Descrição"></textarea>
+<input id="name" placeholder="Nome do produto *" required>
+<input id="price" placeholder="Preço R$ *" type="number" step="0.01" min="0" required>
+<input id="whatsapp" placeholder="WhatsApp (ex: 5511999999999)">
+<textarea id="desc" placeholder="Descrição do produto"></textarea>
 
-<input type="file" id="files" multiple>
+<input type="file" id="files" multiple accept="image/*" title="Selecione as imagens do produto">
 
-<div id="preview"></div>
+<div id="preview">
+  <span style="color:#888">Nenhuma imagem selecionada</span>
+</div>
 
-<button id="save">Salvar</button>
-<button id="logout">Sair</button>
+<div>
+  <button id="save">💾 Salvar Produto</button>
+  <button id="cancel" style="display:none">❌ Cancelar</button>
+  <button id="logout">🚪 Sair</button>
+</div>
 
-<h3>Produtos</h3>
-<div id="list"></div>
+<div id="message"></div>
+
+<h3>📦 Produtos Cadastrados</h3>
+<div id="list">
+  <p style="color:#888">Carregando...</p>
+</div>
 
 </div>
 
 <script>
 
-const supabase = window.supabase.createClient(
-"https://hjjonggbcrtajvtkrqms.supabase.co",
-"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
-)
+// ✅ CHAVES CORRETAS DO SUPABASE
+const SUPABASE_URL = "https://hjjonggbcrtajvtkrqms.supabase.co"
+const SUPABASE_KEY = "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
 let editingId = null
 
-function el(id){
-return document.getElementById(id)
+// Função auxiliar para pegar elementos
+function el(id) {
+  return document.getElementById(id)
 }
 
-// 🔐 AUTH
-async function init(){
-
-const { data } = await supabase.auth.getSession()
-
-if(!data?.session){
-location.href="login.html"
-return
+// Função para mostrar mensagens
+function showMessage(text, isError = false) {
+  const msg = el("message")
+  msg.textContent = text
+  msg.style.display = "block"
+  msg.style.background = isError ? "#ff4444" : "#44aa44"
+  
+  setTimeout(() => {
+    msg.style.display = "none"
+  }, 3000)
 }
 
-load()
-
+// 🔐 Verificar autenticação
+async function init() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    
+    if (error) throw error
+    
+    if (!session) {
+      console.log("❌ Sem sessão ativa")
+      showMessage("Faça login primeiro!", true)
+      setTimeout(() => {
+        window.location.href = "login.html"
+      }, 1500)
+      return
+    }
+    
+    console.log("✅ Usuário autenticado:", session.user.email)
+    await loadProducts()
+    
+  } catch (error) {
+    console.error("Erro na autenticação:", error.message)
+    showMessage("Erro de autenticação: " + error.message, true)
+  }
 }
 
-// 🖼 PREVIEW
-function preview(){
-
-el("preview").innerHTML=""
-
-Array.from(el("files").files).forEach(f=>{
-
-const r = new FileReader()
-
-r.onload=e=>{
-el("preview").innerHTML+=`<img src="${e.target.result}">`
+// 🖼️ Preview das imagens
+function previewImages() {
+  const preview = el("preview")
+  const files = el("files").files
+  
+  if (files.length === 0) {
+    preview.innerHTML = '<span style="color:#888">Nenhuma imagem selecionada</span>'
+    return
+  }
+  
+  preview.innerHTML = ""
+  
+  Array.from(files).forEach(file => {
+    const reader = new FileReader()
+    
+    reader.onload = function(e) {
+      preview.innerHTML += `<img src="${e.target.result}" alt="Preview">`
+    }
+    
+    reader.readAsDataURL(file)
+  })
 }
 
-r.readAsDataURL(f)
+// 📤 Upload de imagens para o Storage
+async function uploadImages(files) {
+  const urls = []
+  
+  for (let file of files) {
+    try {
+      const timestamp = Date.now()
+      const randomStr = Math.random().toString(36).substring(2, 8)
+      const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
+      const fileName = `${timestamp}_${randomStr}_${safeName}`
+      
+      console.log(`📤 Enviando: ${fileName}`)
+      
+      const { data, error } = await supabase.storage
+        .from("products")
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+      
+      if (error) {
+        console.error("Erro no upload:", error)
+        throw error
+      }
+      
+      console.log("✅ Upload concluído:", data)
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from("products")
+        .getPublicUrl(fileName)
+      
+      urls.push(publicUrl)
+      console.log("🔗 URL:", publicUrl)
+      
+    } catch (error) {
+      console.error("❌ Falha no upload:", error.message)
+      showMessage("Erro ao enviar imagem: " + error.message, true)
+    }
+  }
+  
+  return urls
+}
 
+// 💾 Salvar produto
+async function saveProduct() {
+  try {
+    const name = el("name").value.trim()
+    const price = el("price").value
+    
+    if (!name) {
+      showMessage("⚠️ Preencha o nome do produto!", true)
+      return
+    }
+    
+    if (!price || Number(price) <= 0) {
+      showMessage("⚠️ Preencha um preço válido!", true)
+      return
+    }
+    
+    el("save").disabled = true
+    el("save").textContent = "Salvando..."
+    
+    const files = el("files").files
+    let newImages = []
+    
+    if (files.length > 0) {
+      console.log(`📸 Processando ${files.length} imagens...`)
+      newImages = await uploadImages(files)
+    }
+    
+    let finalImages = newImages
+    
+    if (editingId) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("images")
+        .eq("id", editingId)
+        .single()
+      
+      if (!error && data) {
+        finalImages = [...(data.images || []), ...newImages]
+      }
+    }
+    
+    const productData = {
+      name: name,
+      price: Number(price),
+      whatsapp: el("whatsapp").value.trim(),
+      description: el("desc").value.trim(),
+      images: finalImages,
+      updated_at: new Date().toISOString()
+    }
+    
+    if (editingId) {
+      productData.id = editingId
+    }
+    
+    console.log("💾 Salvando produto:", productData)
+    
+    const { error } = await supabase
+      .from("products")
+      .upsert([productData])
+    
+    if (error) throw error
+    
+    console.log("✅ Produto salvo com sucesso!")
+    showMessage("Produto salvo com sucesso! ✅")
+    
+    clearForm()
+    await loadProducts()
+    
+  } catch (error) {
+    console.error("❌ Erro ao salvar:", error)
+    showMessage("Erro ao salvar: " + error.message, true)
+  } finally {
+    el("save").disabled = false
+    el("save").textContent = "💾 Salvar Produto"
+  }
+}
+
+// 📦 Carregar produtos
+async function loadProducts() {
+  try {
+    console.log("📦 Carregando produtos...")
+    
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("id", { ascending: false })
+    
+    if (error) throw error
+    
+    const list = el("list")
+    
+    if (!data || data.length === 0) {
+      list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">📭 Nenhum produto cadastrado</p>'
+      return
+    }
+    
+    list.innerHTML = ""
+    
+    data.forEach(product => {
+      const images = product.images || []
+      const imagesHtml = images.length > 0 
+        ? images.slice(0, 4).map(img => `<img src="${img}" alt="${product.name}" loading="lazy">`).join("")
+        : '<span style="color:#888">Sem imagens</span>'
+      
+      list.innerHTML += `
+        <div class="card">
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+            ${imagesHtml}
+          </div>
+          
+          <h3>${product.name}</h3>
+          <p style="color:#4aff4a;font-size:1.2em;font-weight:bold;">
+            R$ ${Number(product.price).toFixed(2)}
+          </p>
+          
+          ${product.description ? `<p style="color:#aaa;margin:5px 0;">${product.description}</p>` : ''}
+          
+          <p style="color:#888;font-size:0.85em;">
+            📱 WhatsApp: ${product.whatsapp || 'Não informado'}
+          </p>
+          
+          <div style="margin-top:10px;">
+            <button onclick="editProduct(${product.id})" style="background:#44aa44;">
+              ✏️ Editar
+            </button>
+            <button onclick="deleteProduct(${product.id})" style="background:#ff4444;">
+              🗑️ Excluir
+            </button>
+          </div>
+        </div>
+      `
+    })
+    
+    console.log(`✅ ${data.length} produtos carregados`)
+    
+  } catch (error) {
+    console.error("❌ Erro ao carregar:", error)
+    el("list").innerHTML = `<p style="color:red;">Erro ao carregar produtos: ${error.message}</p>`
+  }
+}
+
+// ✏️ Editar produto
+async function editProduct(id) {
+  try {
+    console.log("✏️ Editando produto:", id)
+    
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .single()
+    
+    if (error) throw error
+    
+    editingId = id
+    el("name").value = data.name
+    el("price").value = data.price
+    el("whatsapp").value = data.whatsapp || ""
+    el("desc").value = data.description || ""
+    
+    const preview = el("preview")
+    preview.innerHTML = ""
+    
+    if (data.images && data.images.length > 0) {
+      data.images.forEach(img => {
+        preview.innerHTML += `<img src="${img}" alt="Imagem existente">`
+      })
+    } else {
+      preview.innerHTML = '<span style="color:#888">Produto sem imagens</span>'
+    }
+    
+    el("save").textContent = "📝 Atualizar Produto"
+    el("cancel").style.display = "inline-block"
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    
+  } catch (error) {
+    console.error("❌ Erro ao editar:", error)
+    showMessage("Erro ao carregar produto: " + error.message, true)
+  }
+}
+
+// 🗑️ Deletar produto
+async function deleteProduct(id) {
+  if (!confirm("Tem certeza que deseja excluir este produto?")) return
+  
+  try {
+    console.log("🗑️ Excluindo produto:", id)
+    
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id)
+    
+    if (error) throw error
+    
+    showMessage("Produto excluído com sucesso! 🗑️")
+    await loadProducts()
+    
+  } catch (error) {
+    console.error("❌ Erro ao excluir:", error)
+    showMessage("Erro ao excluir: " + error.message, true)
+  }
+}
+
+// 🧹 Limpar formulário
+function clearForm() {
+  editingId = null
+  
+  el("name").value = ""
+  el("price").value = ""
+  el("whatsapp").value = ""
+  el("desc").value = ""
+  el("files").value = ""
+  el("preview").innerHTML = '<span style="color:#888">Nenhuma imagem selecionada</span>'
+  
+  el("save").textContent = "💾 Salvar Produto"
+  el("cancel").style.display = "none"
+}
+
+// 🚪 Logout
+async function logout() {
+  if (!confirm("Tem certeza que deseja sair?")) return
+  
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+    
+    window.location.href = "login.html"
+    
+  } catch (error) {
+    console.error("❌ Erro no logout:", error)
+    showMessage("Erro ao sair: " + error.message, true)
+  }
+}
+
+// 🎯 Event Listeners
+el("files").addEventListener("change", previewImages)
+el("save").addEventListener("click", saveProduct)
+el("cancel").addEventListener("click", clearForm)
+el("logout").addEventListener("click", logout)
+
+// Atalho: Ctrl+S para salvar
+document.addEventListener("keydown", function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+    e.preventDefault()
+    saveProduct()
+  }
 })
 
-}
-
-// 📤 UPLOAD
-async function upload(files){
-
-let urls=[]
-
-for(let f of files){
-
-const name = Date.now()+"_"+Math.random().toString(36).slice(2)
-
-await supabase.storage
-.from("products")
-.upload(name,f)
-
-const { data } = supabase.storage
-.from("products")
-.getPublicUrl(name)
-
-urls.push(data.publicUrl)
-
-}
-
-return urls
-
-}
-
-// 💾 SAVE
-async function save(){
-
-const files = el("files").files
-
-let newImgs = []
-
-if(files.length){
-newImgs = await upload(files)
-}
-
-let finalImgs = newImgs
-
-if(editingId){
-
-const { data } = await supabase
-.from("products")
-.select("images")
-.eq("id",editingId)
-.single()
-
-finalImgs = [...(data?.images || []), ...newImgs]
-
-}
-
-await supabase.from("products").upsert([{
-id: editingId,
-name: el("name").value,
-price: Number(el("price").value || 0),
-whatsapp: el("whatsapp").value,
-description: el("desc").value,
-images: finalImgs
-}])
-
-clear()
-load()
-
-}
-
-// 📦 LOAD
-async function load(){
-
-const { data } = await supabase
-.from("products")
-.select("*")
-.order("id",{ascending:false})
-
-el("list").innerHTML=""
-
-;(data||[]).forEach(p=>{
-
-el("list").innerHTML+=`
-<div class="card">
-
-<div style="display:flex">
-${(p.images||[]).slice(0,3).map(i=>`<img src="${i}">`).join("")}
-</div>
-
-<h3>${p.name}</h3>
-<strong>R$ ${p.price}</strong>
-
-<button onclick="edit(${p.id})">Editar</button>
-<button onclick="del(${p.id})">Excluir</button>
-
-</div>
-`
-
-})
-
-}
-
-// ✏️ EDIT
-async function edit(id){
-
-const { data } = await supabase
-.from("products")
-.select("*")
-.eq("id",id)
-.single()
-
-editingId=id
-
-el("name").value=data.name
-el("price").value=data.price
-el("whatsapp").value=data.whatsapp
-el("desc").value=data.description
-
-el("preview").innerHTML=""
-
-;(data.images||[]).forEach(i=>{
-el("preview").innerHTML+=`<img src="${i}">`
-})
-
-}
-
-// 🗑 DELETE
-async function del(id){
-
-await supabase
-.from("products")
-.delete()
-.eq("id",id)
-
-load()
-
-}
-
-// 🧹 CLEAR
-function clear(){
-
-editingId=null
-
-el("name").value=""
-el("price").value=""
-el("whatsapp").value=""
-el("desc").value=""
-el("files").value=""
-el("preview").innerHTML=""
-
-}
-
-el("files").onchange=preview
-el("save").onclick=save
-el("logout").onclick=async()=>{
-await supabase.auth.signOut()
-location.href="login.html"
-}
-
+// 🚀 Iniciar
+console.log("🚀 Iniciando aplicação...")
 init()
 
 </script>
