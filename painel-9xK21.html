@@ -28,6 +28,8 @@
 </div>
 
 <script>
+console.log('Script iniciado');
+
 function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -57,12 +59,15 @@ function get(id) {
 }
 
 async function protect() {
+  console.log('protect() chamada');
   const { data } = await supabase.auth.getSession()
+  console.log('Sessão:', data.session);
   if (!data.session) {
     location.href = "login.html"
     return
   }
   get("panel").style.display = "block"
+  console.log('Painel exibido');
   load()
 }
 
@@ -145,6 +150,7 @@ async function save() {
 }
 
 async function load() {
+  console.log('load() chamada');
   const { data, error } = await supabase
     .from("products")
     .select("*")
@@ -218,6 +224,7 @@ function clear() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  console.log('DOMContentLoaded');
   get("btnSave").onclick = save
   get("files").onchange = preview
   get("logout").onclick = async () => {
