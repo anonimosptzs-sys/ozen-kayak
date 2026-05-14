@@ -4,51 +4,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Login</title>
 </head>
 
-<body class="container">
+<body>
 
-<h2>Login</h2>
+<div class="container small">
+
+<div class="card">
+
+<h2>Login Admin</h2>
 
 <input id="email" class="input" placeholder="Email">
+
 <input id="password" type="password" class="input" placeholder="Senha">
 
-<button id="btnLogin" class="btn btn-main">Entrar</button>
+<button id="btnLogin" class="btn btn-main">
+Entrar
+</button>
+
+</div>
+
+</div>
 
 <script>
 const supabase = window.supabase.createClient(
-"https://yaoyuizofpiqvqbberww.supabase.co",
-"sb_publishable_9QJ7Tejco_rVo3PlWj9aSw_frNrAhZc",
-{ auth:{ persistSession:true } }
+"https://hjjonggbcrtajvtkrqms.supabase.co",
+"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
 )
 
-// 🔎 DEBUG AUTH
-supabase.auth.onAuthStateChange((event, session)=>{
-console.log("EVENTO:", event)
-console.log("SESSION:", session)
-})
-
-document.getElementById("btnLogin").addEventListener("click", async () => {
+document.getElementById("btnLogin")
+.addEventListener("click", async ()=>{
 
 const email = document.getElementById("email").value.trim()
+
 const password = document.getElementById("password").value.trim()
 
-console.log("Tentando login:", email)
-
-const { data, error } = await supabase.auth.signInWithPassword({
+const { error } = await supabase.auth.signInWithPassword({
 email,
 password
 })
 
 if(error){
-console.error("Erro:", error)
 alert(error.message)
 return
 }
 
-console.log("LOGIN OK")
-
 window.location.href = "painel-9xK21.html"
+
 })
 </script>
 
