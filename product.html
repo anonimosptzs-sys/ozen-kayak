@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -10,54 +11,64 @@
 <body>
 
 <div class="container">
-
-<div id="product"></div>
-
+  <div id="product"></div>
 </div>
 
 <script>
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const supabase = window.supabase.createClient(
-"https://hjjonggbcrtajvtkrqms.supabase.co",
-"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
+  "https://hjjonggbcrtajvtkrqms.supabase.co",
+  "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
 )
 
 const id = new URLSearchParams(location.search).get("id")
 
-async function load(){
+async function load() {
+  if (!id) {
+    document.getElementById("product").innerHTML = "<p>Produto não encontrado.</p>"
+    return
+  }
 
-const { data, error } = await supabase
-.from("products")
-.select("*")
-.eq("id",id)
-.single()
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", id)
+    .single()
 
-if(error){
-console.log(error)
-return
-}
+  if (error) {
+    console.log(error)
+    document.getElementById("product").innerHTML = "<p>Erro ao carregar o produto.</p>"
+    return
+  }
 
-document.getElementById("product").innerHTML = `
-<div class="card">
+  const imagesHtml = Array.isArray(data.images)
+    ? data.images.map(i => `<img src="${esc(i)}" class="product-img">`).join('')
+    : ''
 
-<h1>${data.name}</h1>
+  const whatsapp = data.whatsapp && data.whatsapp.replace(/\D/g, '') // limpa o número
+  const whatsappLink = whatsapp ? `https://wa.me/${whatsapp}` : ''
 
-${data.images.map(i=>`
-<img src="${i}" class="product-img">
-`).join("")}
-
-<p>${data.description}</p>
-
-<strong>R$ ${data.price}</strong>
-
-<a href="https://wa.me/${data.whatsapp}">
-<button class="btn btn-main">
-Comprar
-</button>
-</a>
-
-</div>
-`
-
+  document.getElementById("product").innerHTML = `
+    <div class="card">
+      <h1>${esc(data.name)}</h1>
+      ${imagesHtml}
+      <p>${esc(data.description)}</p>
+      <strong>R$ ${esc(data.price)}</strong>
+      ${whatsappLink ? `
+        <a href="${whatsappLink}" target="_blank" rel="noopener">
+          <button class="btn btn-main">Comprar</button>
+        </a>
+      ` : ''}
+    </div>
+  `
 }
 
 load()
