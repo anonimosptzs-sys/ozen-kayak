@@ -94,7 +94,13 @@ class="products"
 const supabase =
 window.supabase.createClient(
 "https://hjjonggbcrtajvtkrqms.supabase.co",
-"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
+"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE",
+{
+auth:{
+persistSession:true,
+autoRefreshToken:true
+}
+}
 )
 
 let editingId = null
