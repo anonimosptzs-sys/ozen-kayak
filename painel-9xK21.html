@@ -55,99 +55,64 @@ detectSessionInUrl:false
 
 let editingId = null
 
-// 🔐 LOGIN CHECK PROFISSIONAL
+function get(id){
+return document.getElementById(id)
+}
+
 async function protect(){
 
-const { data } =
-await supabase.auth.getSession()
+const { data } = await supabase.auth.getSession()
 
 if(!data.session){
-
-window.location.href =
-"login.html"
-
+location.href = "login.html"
 return
-
 }
 
-document.getElementById("panel").style.display="block"
-
+get("panel").style.display = "block"
 load()
-
 }
 
-// 🚪 LOGOUT
-document.addEventListener("DOMContentLoaded",()=>{
+function preview(){
 
-document.getElementById("logout").onclick = async ()=>{
+const files = get("files").files
+const box = get("preview")
 
-await supabase.auth.signOut()
+box.innerHTML = ""
 
-window.location.href="login.html"
+Array.from(files).forEach(file=>{
 
+const reader = new FileReader()
+
+reader.onload = e=>{
+box.innerHTML += `<img src="${e.target.result}">`
 }
 
-// SAVE
-document.getElementById("btnSave").onclick = save
-
-// PREVIEW
-document.getElementById("files").onchange = preview
+reader.readAsDataURL(file)
 
 })
 
-// 🖼 PREVIEW IMAGES
-function preview(){
-
-const files =
-document.getElementById("files").files
-
-const box =
-document.getElementById("preview")
-
-box.innerHTML=""
-
-for(let f of files){
-
-const r = new FileReader()
-
-r.onload = e => {
-
-box.innerHTML += `
-<img src="${e.target.result}">
-`
-
 }
 
-r.readAsDataURL(f)
-
-}
-
-}
-
-// 📤 UPLOAD REAL
 async function upload(files){
 
-let urls=[]
+let urls = []
 
-for(let f of files){
+for(let file of files){
 
-const name =
-Date.now()+"_"+f.name
+const name = Date.now()+"_"+file.name
 
-const { error } =
-await supabase.storage
+const { error } = await supabase
+.storage
 .from("products")
-.upload(name,f)
+.upload(name,file)
 
 if(error){
-
 console.log(error)
 continue
-
 }
 
-const { data } =
-supabase.storage
+const { data } = supabase
+.storage
 .from("products")
 .getPublicUrl(name)
 
@@ -159,59 +124,33 @@ return urls
 
 }
 
-// 💾 SAVE PRODUCT
 async function save(){
 
-const files =
-document.getElementById("files").files
+const files = get("files").files
 
-let imgs=[]
+let imgs = []
 
 if(files.length){
-
 imgs = await upload(files)
-
 }
 
 const product = {
-
-name:name.value,
-price:parseFloat(price.value),
-whatsapp:whatsapp.value,
-description:desc.value,
-images:imgs
-
+name: get("name").value,
+price: Number(get("price").value || 0),
+whatsapp: get("whatsapp").value,
+description: get("desc").value,
+images: imgs
 }
 
-console.log("SAVING:",product)
+const req = editingId
+? supabase.from("products").update(product).eq("id",editingId)
+: supabase.from("products").insert([product])
 
-let res
+const { error } = await req
 
-if(editingId){
-
-res =
-await supabase
-.from("products")
-.update(product)
-.eq("id",editingId)
-
-}else{
-
-res =
-await supabase
-.from("products")
-.insert([product])
-
-}
-
-console.log(res)
-
-if(res.error){
-
-alert(res.error.message)
-
+if(error){
+alert(error.message)
 return
-
 }
 
 clear()
@@ -219,50 +158,50 @@ load()
 
 }
 
-// 📦 LOAD PRODUCTS
 async function load(){
 
-const { data, error } =
-await supabase
+const { data, error } = await supabase
 .from("products")
 .select("*")
 .order("id",{ascending:false})
 
 if(error){
-
 console.log(error)
 return
-
 }
 
-list.innerHTML=""
+const list = get("list")
+list.innerHTML = ""
 
 data.forEach(p=>{
+
+const img = Array.isArray(p.images) ? p.images[0] : ""
 
 list.innerHTML += `
 <div class="card">
 
-<img src="${p.images?.[0] || ''}" width="100%">
+<img src="${img}">
 
 <h3>${p.name}</h3>
 
 <strong>R$ ${p.price}</strong>
 
+<div style="display:flex;gap:10px">
+
 <button onclick="edit(${p.id})">Editar</button>
 <button onclick="del(${p.id})">Excluir</button>
 
 </div>
-`
 
+</div>
+`
 })
 
 }
 
-// ✏️ EDIT
 async function edit(id){
 
-const { data } =
-await supabase
+const { data } = await supabase
 .from("products")
 .select("*")
 .eq("id",id)
@@ -270,14 +209,24 @@ await supabase
 
 editingId = id
 
-name.value = data.name
-price.value = data.price
-desc.value = data.description
-whatsapp.value = data.whatsapp
+get("name").value = data.name
+get("price").value = data.price
+get("desc").value = data.description
+get("whatsapp").value = data.whatsapp
+
+const box = get("preview")
+box.innerHTML = ""
+
+if(Array.isArray(data.images)){
+data.images.forEach(img=>{
+box.innerHTML += `<img src="${img}">`
+})
+}
+
+window.scrollTo({top:0,behavior:"smooth"})
 
 }
 
-// 🗑 DELETE
 async function del(id){
 
 await supabase
@@ -289,22 +238,33 @@ load()
 
 }
 
-// CLEAR
 function clear(){
 
-name.value=""
-price.value=""
-desc.value=""
-whatsapp.value=""
-files.value=""
-preview.innerHTML=""
+get("name").value=""
+get("price").value=""
+get("desc").value=""
+get("whatsapp").value=""
+get("files").value=""
+get("preview").innerHTML=""
 
-editingId=null
+editingId = null
 
 }
 
-// START
+window.addEventListener("DOMContentLoaded",()=>{
+
+get("btnSave").onclick = save
+get("files").onchange = preview
+get("logout").onclick = async ()=>{
+
+await supabase.auth.signOut()
+location.href="login.html"
+
+}
+
 protect()
+
+})
 
 </script>
 
