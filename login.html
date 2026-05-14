@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <link rel="stylesheet" href="style.css">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <title>Login</title>
 </head>
 
@@ -15,11 +19,23 @@
 
 <h2>Login Admin</h2>
 
-<input id="email" class="input" placeholder="Email">
+<input
+id="email"
+class="input"
+placeholder="Email"
+>
 
-<input id="password" type="password" class="input" placeholder="Senha">
+<input
+id="password"
+type="password"
+class="input"
+placeholder="Senha"
+>
 
-<button id="btnLogin" class="btn btn-main">
+<button
+id="btnLogin"
+class="btn btn-main"
+>
 Entrar
 </button>
 
@@ -28,31 +44,69 @@ Entrar
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+
+const supabase =
+window.supabase.createClient(
 "https://hjjonggbcrtajvtkrqms.supabase.co",
 "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
 )
 
+const btn =
 document.getElementById("btnLogin")
-.addEventListener("click", async ()=>{
 
-const email = document.getElementById("email").value.trim()
+btn.addEventListener(
+"click",
+async ()=>{
 
-const password = document.getElementById("password").value.trim()
+const email =
+document
+.getElementById("email")
+.value
+.trim()
 
-const { error } = await supabase.auth.signInWithPassword({
+const password =
+document
+.getElementById("password")
+.value
+.trim()
+
+console.log("BOTAO CLICADO")
+
+try{
+
+const { data, error } =
+await supabase.auth.signInWithPassword({
 email,
 password
 })
 
+console.log(data)
+console.log(error)
+
 if(error){
+
 alert(error.message)
+
 return
+
 }
 
-window.location.href = "painel-9xK21.html"
+alert("LOGIN OK")
 
-})
+window.location.href =
+"painel-9xK21.html"
+
+}catch(e){
+
+console.log(e)
+
+alert(e.message)
+
+}
+
+}
+)
+
 </script>
 
 </body>
