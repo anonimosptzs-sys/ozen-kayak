@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Painel Admin</title>
-
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -14,258 +11,223 @@
 <body>
 
 <div id="panel" class="container" style="display:none;">
+  <div class="card">
+    <h2>Painel Produtos</h2>
+    <input id="name" class="input" placeholder="Nome">
+    <input id="price" class="input" placeholder="Preço">
+    <input id="whatsapp" class="input" placeholder="WhatsApp">
+    <textarea id="desc" class="input" placeholder="Descrição"></textarea>
+    <input type="file" id="files" multiple accept="image/*" class="input">
+    <div id="preview" class="preview"></div>
+    <button id="btnSave" class="btn btn-main">Salvar</button>
+    <button id="logout" class="btn btn-danger">Sair</button>
+  </div>
 
-<div class="card">
-
-<h2>Painel Produtos</h2>
-
-<input id="name" class="input" placeholder="Nome">
-<input id="price" class="input" placeholder="Preço">
-<input id="whatsapp" class="input" placeholder="WhatsApp">
-<textarea id="desc" class="input" placeholder="Descrição"></textarea>
-
-<input type="file" id="files" multiple accept="image/*" class="input">
-
-<div id="preview" class="preview"></div>
-
-<button id="btnSave" class="btn btn-main">Salvar</button>
-<button id="logout" class="btn btn-danger">Sair</button>
-
-</div>
-
-<h3>Produtos</h3>
-<div id="list" class="products"></div>
-
+  <h3>Produtos</h3>
+  <div id="list" class="products"></div>
 </div>
 
 <script>
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-const supabase =
-window.supabase.createClient(
-"https://hjjonggbcrtajvtkrqms.supabase.co",
-"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE",
-{
-auth:{
-persistSession:true,
-autoRefreshToken:true,
-detectSessionInUrl:false
-}
-}
+const supabase = window.supabase.createClient(
+  "https://hjjonggbcrtajvtkrqms.supabase.co",
+  "sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false
+    }
+  }
 )
 
 let editingId = null
+let currentImages = [] // armazena as imagens do produto sendo editado
 
-function get(id){
-return document.getElementById(id)
+function get(id) {
+  return document.getElementById(id)
 }
 
-async function protect(){
-
-const { data } = await supabase.auth.getSession()
-
-if(!data.session){
-location.href = "login.html"
-return
+async function protect() {
+  const { data } = await supabase.auth.getSession()
+  if (!data.session) {
+    location.href = "login.html"
+    return
+  }
+  get("panel").style.display = "block"
+  load()
 }
 
-get("panel").style.display = "block"
-load()
+function preview() {
+  const files = get("files").files
+  const box = get("preview")
+  box.innerHTML = ""
+
+  Array.from(files).forEach(file => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      box.innerHTML += `<img src="${e.target.result}">`
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
-function preview(){
-
-const files = get("files").files
-const box = get("preview")
-
-box.innerHTML = ""
-
-Array.from(files).forEach(file=>{
-
-const reader = new FileReader()
-
-reader.onload = e=>{
-box.innerHTML += `<img src="${e.target.result}">`
+async function upload(files) {
+  let urls = []
+  for (let file of files) {
+    const name = Date.now() + "_" + file.name
+    const { error } = await supabase.storage.from("products").upload(name, file)
+    if (error) {
+      console.log(error)
+      continue
+    }
+    const { data } = supabase.storage.from("products").getPublicUrl(name)
+    urls.push(data.publicUrl)
+  }
+  return urls
 }
 
-reader.readAsDataURL(file)
+async function save() {
+  const files = get("files").files
+  let imgs = []
 
+  if (files.length > 0) {
+    imgs = await upload(files)
+  } else if (editingId) {
+    // se estiver editando e não escolheu novas imagens, mantém as existentes
+    imgs = currentImages
+  }
+
+  const priceValue = get("price").value.replace(',', '.')
+  const priceNum = parseFloat(priceValue)
+
+  if (isNaN(priceNum) && get("price").value.trim() !== '') {
+    alert("Preço inválido. Digite um número.")
+    return
+  }
+
+  const product = {
+    name: get("name").value,
+    price: priceNum || 0,
+    whatsapp: get("whatsapp").value,
+    description: get("desc").value,
+    images: imgs
+  }
+
+  const btn = get("btnSave")
+  btn.disabled = true
+  btn.textContent = "Salvando..."
+
+  const req = editingId
+    ? supabase.from("products").update(product).eq("id", editingId)
+    : supabase.from("products").insert([product])
+
+  const { error } = await req
+
+  if (error) {
+    alert(error.message)
+    btn.disabled = false
+    btn.textContent = "Salvar"
+    return
+  }
+
+  clear()
+  load()
+  btn.disabled = false
+  btn.textContent = "Salvar"
+}
+
+async function load() {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("id", { ascending: false })
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  const list = get("list")
+  let html = ""
+
+  data.forEach(p => {
+    const img = Array.isArray(p.images) && p.images[0] ? esc(p.images[0]) : ''
+    html += `
+      <div class="card">
+        ${img ? `<img src="${img}">` : ''}
+        <h3>${esc(p.name)}</h3>
+        <strong>R$ ${esc(p.price)}</strong>
+        <div style="display:flex;gap:10px">
+          <button onclick="edit(${p.id})">Editar</button>
+          <button onclick="del(${p.id})">Excluir</button>
+        </div>
+      </div>
+    `
+  })
+
+  list.innerHTML = html
+}
+
+async function edit(id) {
+  const { data } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  editingId = id
+  currentImages = Array.isArray(data.images) ? data.images : []
+
+  get("name").value = data.name
+  get("price").value = data.price
+  get("desc").value = data.description
+  get("whatsapp").value = data.whatsapp
+
+  const box = get("preview")
+  box.innerHTML = ""
+  currentImages.forEach(img => {
+    box.innerHTML += `<img src="${img}">`
+  })
+
+  window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
+async function del(id) {
+  if (!confirm("Tem certeza que deseja excluir este produto?")) return
+
+  await supabase.from("products").delete().eq("id", id)
+  load()
+}
+
+function clear() {
+  get("name").value = ""
+  get("price").value = ""
+  get("desc").value = ""
+  get("whatsapp").value = ""
+  get("files").value = ""
+  get("preview").innerHTML = ""
+  editingId = null
+  currentImages = []
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  get("btnSave").onclick = save
+  get("files").onchange = preview
+  get("logout").onclick = async () => {
+    await supabase.auth.signOut()
+    location.href = "login.html"
+  }
+  protect()
 })
-
-}
-
-async function upload(files){
-
-let urls = []
-
-for(let file of files){
-
-const name = Date.now()+"_"+file.name
-
-const { error } = await supabase
-.storage
-.from("products")
-.upload(name,file)
-
-if(error){
-console.log(error)
-continue
-}
-
-const { data } = supabase
-.storage
-.from("products")
-.getPublicUrl(name)
-
-urls.push(data.publicUrl)
-
-}
-
-return urls
-
-}
-
-async function save(){
-
-const files = get("files").files
-
-let imgs = []
-
-if(files.length){
-imgs = await upload(files)
-}
-
-const product = {
-name: get("name").value,
-price: Number(get("price").value || 0),
-whatsapp: get("whatsapp").value,
-description: get("desc").value,
-images: imgs
-}
-
-const req = editingId
-? supabase.from("products").update(product).eq("id",editingId)
-: supabase.from("products").insert([product])
-
-const { error } = await req
-
-if(error){
-alert(error.message)
-return
-}
-
-clear()
-load()
-
-}
-
-async function load(){
-
-const { data, error } = await supabase
-.from("products")
-.select("*")
-.order("id",{ascending:false})
-
-if(error){
-console.log(error)
-return
-}
-
-const list = get("list")
-list.innerHTML = ""
-
-data.forEach(p=>{
-
-const img = Array.isArray(p.images) ? p.images[0] : ""
-
-list.innerHTML += `
-<div class="card">
-
-<img src="${img}">
-
-<h3>${p.name}</h3>
-
-<strong>R$ ${p.price}</strong>
-
-<div style="display:flex;gap:10px">
-
-<button onclick="edit(${p.id})">Editar</button>
-<button onclick="del(${p.id})">Excluir</button>
-
-</div>
-
-</div>
-`
-})
-
-}
-
-async function edit(id){
-
-const { data } = await supabase
-.from("products")
-.select("*")
-.eq("id",id)
-.single()
-
-editingId = id
-
-get("name").value = data.name
-get("price").value = data.price
-get("desc").value = data.description
-get("whatsapp").value = data.whatsapp
-
-const box = get("preview")
-box.innerHTML = ""
-
-if(Array.isArray(data.images)){
-data.images.forEach(img=>{
-box.innerHTML += `<img src="${img}">`
-})
-}
-
-window.scrollTo({top:0,behavior:"smooth"})
-
-}
-
-async function del(id){
-
-await supabase
-.from("products")
-.delete()
-.eq("id",id)
-
-load()
-
-}
-
-function clear(){
-
-get("name").value=""
-get("price").value=""
-get("desc").value=""
-get("whatsapp").value=""
-get("files").value=""
-get("preview").innerHTML=""
-
-editingId = null
-
-}
-
-window.addEventListener("DOMContentLoaded",()=>{
-
-get("btnSave").onclick = save
-get("files").onchange = preview
-get("logout").onclick = async ()=>{
-
-await supabase.auth.signOut()
-location.href="login.html"
-
-}
-
-protect()
-
-})
-
 </script>
 
 </body>
