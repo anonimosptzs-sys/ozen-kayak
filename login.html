@@ -54,15 +54,18 @@ window.addEventListener(
 const supabase =
 window.supabase.createClient(
 "https://hjjonggbcrtajvtkrqms.supabase.co",
-"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE"
+"sb_publishable_u7Z5lgt3hjIWOJxsihqh0Q_2A8MaTjE",
+{
+auth:{
+persistSession:true,
+autoRefreshToken:true
+}
+}
 )
 
-const btn =
-document.getElementById("btnLogin")
-
-btn.onclick = async ()=>{
-
-console.log("BOTAO FUNCIONOU")
+document
+.getElementById("btnLogin")
+.onclick = async ()=>{
 
 const email =
 document
@@ -103,8 +106,12 @@ return
 
 alert("LOGIN OK")
 
+setTimeout(()=>{
+
 window.location.href =
 "painel-9xK21.html"
+
+},500)
 
 }
 
